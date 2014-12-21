@@ -12,12 +12,15 @@ textbox.fg_color = new dl.DLColor(43,89,249);
 textbox.bg_color = new dl.DLColor(249,197,166);
 textbox.border_color = new dl.DLColor(0, 200, 0);
 textbox.boarder_width = 1;
-textbox.control = 12;                           //ignored for now
+textbox.control = 12;                          
 
 var text = dl.DLText();
-text.text = "abcdef";
+text.text = "ab";
+//text.text_action = TextAction.TEXT_APPEND;
+text.text_action = 1; //TEXT_APPEND
+text.message = 0;
 text.position = 0;
-text.control = 12                               //ignored for now
+text.parent_control = 12;                            
 
 
 

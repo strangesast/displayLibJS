@@ -36,7 +36,7 @@ var DLColor = function (a_red,a_green,a_blue) {
         this.value = -1;
     }
     else {
-        this.value = ((a_red & 0xff)<< 16) + ((a_green & 0xff) << 8) + (a_blue & 0xff);
+        this.value = 0x7f000000 + ((a_red & 0xff)<< 16) + ((a_green & 0xff) << 8) + (a_blue & 0xff);
     }
     this.red = function () {
         return (this.value >> 16) & 0xff;
@@ -48,13 +48,13 @@ var DLColor = function (a_red,a_green,a_blue) {
         return this.value & 0xff;
     }
     this.RGB = function (a_red, a_green, a_blue) {
-        this.value = ((a_red & 0xff)<< 16) + ((a_green & 0xff) << 8) + (a_blue & 0xff);
+        this.value = 0x7f000000 + ((a_red & 0xff)<< 16) + ((a_green & 0xff) << 8) + (a_blue & 0xff);
     }
     this.setEmpty = function () {
         this.value = -1;
     }
     this.isEmpty = function () {
-        return (this.value & 0xff000000) 
+        return (this.value & 0xff000000 == 0xff000000) 
     }
     this.getValue = function () {
         return this.value;
@@ -68,6 +68,7 @@ var DLBase = function () {
     this.layer = 0;
     this.panel = 0;
     this.control = 0;
+    this.parent_control = 0;
     this.color = DLColor(0);
 }
     
@@ -168,6 +169,7 @@ DLBase.prototype.BuildMessage = function () {
     pos = this.EncodeInt (this.layer, msg_buffer, pos);
     pos = this.EncodeInt (this.panel, msg_buffer, pos);
     pos = this.EncodeInt (this.control, msg_buffer, pos);
+    pos = this.EncodeInt (this.parent_control, msg_buffer, pos);
     pos = this.BuildMessageContents (msg_buffer, pos);
     msg_buffer[pos] = ProtocolCode.MSG_END;
     pos++;
@@ -238,6 +240,7 @@ DLTextbox.prototype.BuildMessageContents = function(msg_buffer, pos) {
 
 
 var MSG_TEXT = 150;
+var TextAction = Object.freeze ({TEXT_NOACTION:0, TEXT_APPEND:1, TEXT_REPLACE:2, TEXT_CLEAR:3});
 
 function DLText () {
     DLBase.call(this);
@@ -246,6 +249,8 @@ function DLText () {
     this.bg_color = new DLColor;
     this.position = 0;
     this.text = "";
+    this.message = 0;
+    this.text_action = 0;
 }
 
 DLText.prototype = Object.create(DLBase.prototype);
@@ -256,6 +261,8 @@ DLText.prototype.BuildMessageContents = function(msg_buffer, pos) {
     pos = this.EncodeInt (this.fg_color.value, msg_buffer, pos);
     pos = this.EncodeInt (this.bg_color.value, msg_buffer, pos);
     pos = this.EncodeInt (this.position, msg_buffer, pos);
+    pos = this.EncodeInt (this.message, msg_buffer, pos);
+    pos = this.EncodeInt (this.text_action, msg_buffer, pos);
     pos = this.EncodeString (this.text, msg_buffer, pos);
     return pos;
 }
