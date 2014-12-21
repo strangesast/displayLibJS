@@ -31,12 +31,19 @@ var XYInfo = function (a_x, a_y, a_x_size, a_y_size) {
     }
 }
 
-var DLColor = function (a_red,a_green,a_blue) {
+var DLColor = function (a_red,a_green,a_blue,a_intensity) {
     if (a_red === undefined) {
         this.value = -1;
     }
-    else {
+    else if (a_intensity === undefined) {
         this.value = 0x7f000000 + ((a_red & 0xff)<< 16) + ((a_green & 0xff) << 8) + (a_blue & 0xff);
+    }
+    else {
+        intensity = 100;
+        if (a_intensity > 0 && a_intensity < 100) {
+            intensity = a_intensity;
+        }
+        this.value = (intensity << 24) + ((a_red & 0xff)<< 16) + ((a_green & 0xff) << 8) + (a_blue & 0xff);
     }
     this.red = function () {
         return (this.value >> 16) & 0xff;
@@ -47,8 +54,26 @@ var DLColor = function (a_red,a_green,a_blue) {
     this.blue = function () {
         return this.value & 0xff;
     }
-    this.RGB = function (a_red, a_green, a_blue) {
+    this.RGB = function (a_red, a_green, a_blue, a_intensity) {
+        intensity = 100;
+        if (!(a_intensity === undefined) && a_intensity > 0 && a_intensity < 100) {
+            intensity = a_intensity;
+        }
+        this.value = (intensity << 24) + ((a_red & 0xff)<< 16) + ((a_green & 0xff) << 8) + (a_blue & 0xff);
         this.value = 0x7f000000 + ((a_red & 0xff)<< 16) + ((a_green & 0xff) << 8) + (a_blue & 0xff);
+    }
+    this.get_intensity = function () {
+        intensity = (this.value & 0x7f000000) >> 24;
+        if (intensity > 100 || intensity < 0) {
+            intensity = 100;
+        }
+        return intensity;
+    }
+    this.set_intensity = function(a_intensity) {
+        if (a_intensity < 0 || a_intensity > 100) {
+            a_intensity = 100;
+        }
+        this.value = (this.value & 0x00ffffff) | (a_intensity << 24);
     }
     this.setEmpty = function () {
         this.value = -1;
