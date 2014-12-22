@@ -292,6 +292,39 @@ DLText.prototype.BuildMessageContents = function(msg_buffer, pos) {
     return pos;
 }
 
+var MSG_PANELDEF = 151;
+
+function DLPanelDef () {
+    DLBase.call(this);
+    this.type = MSG_PANELDEF;
+    this.fg_color = new DLColor;
+    this.bg_color = new DLColor;
+    this.geometry=0;
+    this.position=0;
+    this.panel_location = new XYInfo;
+    this.total_size = new XYInfo;
+}
+
+DLPanelDef.prototype = Object.create(DLBase.prototype);
+DLPanelDef.prototype.constructor = DLPanelDef;
+//override BuildMessageContents
+DLPanelDef.prototype.BuildMessageContents = function(msg_buffer, pos) {
+    //xy
+    pos = this.EncodeInt (this.fg_color.value, msg_buffer, pos);
+    pos = this.EncodeInt (this.bg_color.value, msg_buffer, pos);
+    pos = this.EncodeInt (this.geometry, msg_buffer, pos);
+    pos = this.EncodeInt (this.position, msg_buffer, pos);
+    pos = this.EncodeInt (this.panel_location.x, msg_buffer, pos);
+    pos = this.EncodeInt (this.panel_location.y, msg_buffer, pos);
+    pos = this.EncodeInt (this.panel_location.x_size, msg_buffer, pos);
+    pos = this.EncodeInt (this.panel_location.y_size, msg_buffer, pos);
+    pos = this.EncodeInt (this.total_size.x, msg_buffer, pos);
+    pos = this.EncodeInt (this.total_size.y, msg_buffer, pos);
+    pos = this.EncodeInt (this.total_size.x_size, msg_buffer, pos);
+    pos = this.EncodeInt (this.total_size.y_size, msg_buffer, pos);
+    return pos;
+}
+
 
 
 function CreateDLText () {
@@ -306,9 +339,14 @@ function CreateDLRect () {
     return new DLRect();
 }
 
+function CreateDLPanelDef () {
+    return new DLPanelDef;
+}
+
 module.exports.DLRect = CreateDLRect;
 module.exports.DLTextbox = CreateDLTextbox;
 module.exports.DLText = CreateDLText;
+module.exports.DLPanelDef = CreateDLPanelDef;
 module.exports.XYInfo = XYInfo;
 module.exports.DLColor = DLColor;
 
