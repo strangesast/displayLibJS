@@ -79,7 +79,7 @@ var DLColor = function (a_red,a_green,a_blue,a_intensity) {
         this.value = -1;
     }
     this.isEmpty = function () {
-        return (this.value & 0xff000000 == 0xff000000) 
+        return (this.value & 0xff000000 == 0xff000000)
     }
     this.getValue = function () {
         return this.value;
@@ -94,9 +94,10 @@ var DLBase = function () {
     this.panel = 0;
     this.control = 0;
     this.parent_control = 0;
+    this.is_final = 0;
     this.color = DLColor(0);
 }
-    
+
 DLBase.prototype.EncodeInt = function (value, encoded_buffer, pos) {
 //        var encoded_buffer = new Buffer(100);
     if (value<0) {
@@ -133,7 +134,7 @@ DLBase.prototype.EncodeString = function (string_value, encoded_buffer, pos) {
     pos++;
     return pos;
 }
-    
+
 DLBase.prototype.DecodeInt = function (encoded_buffer, pos) {
     var is_negative = false;
     if (encoded_buffer[pos] == ProtocolCode.START_NUMBER_POS) {
@@ -149,7 +150,7 @@ DLBase.prototype.DecodeInt = function (encoded_buffer, pos) {
         }
     }
 }
-    
+
 DLBase.prototype.DecodeString = function (encoded_buffer, pos) {
     if (encoded_buffer[pos] != ProtocolCode.START_TEXT) {
         return 0;
@@ -172,16 +173,16 @@ DLBase.prototype.DecodeString = function (encoded_buffer, pos) {
         result_pos:pos
     }
 }
-    
-    
+
+
 DLBase.prototype.BuildMessageContents = function (buffer, pos) {
     return pos;
 }
-    
+
 DLBase.prototype.BuildMessage = function () {
     var msg_buffer = new Buffer(2000);
     var pos = 0;
-    
+
     //build the header
     msg_buffer[pos] = ProtocolCode.MSG_START;
     pos++;
@@ -189,12 +190,13 @@ DLBase.prototype.BuildMessage = function () {
     msg_buffer[pos] = ProtocolCode.MAGIC_NUMBER;
     pos++;
     pos = this.EncodeInt (this.type, msg_buffer, pos);
-    
+
     //write the common values
     pos = this.EncodeInt (this.layer, msg_buffer, pos);
     pos = this.EncodeInt (this.panel, msg_buffer, pos);
     pos = this.EncodeInt (this.control, msg_buffer, pos);
     pos = this.EncodeInt (this.parent_control, msg_buffer, pos);
+    pos = this.EncodeInt (this.is_final, msg_buffer, pos);
     pos = this.BuildMessageContents (msg_buffer, pos);
     msg_buffer[pos] = ProtocolCode.MSG_END;
     pos++;
@@ -301,6 +303,7 @@ function DLPanelDef () {
     this.bg_color = new DLColor;
     this.geometry=0;
     this.position=0;
+    this.layout=0;
     this.panel_location = new XYInfo;
     this.total_size = new XYInfo;
 }
@@ -314,6 +317,7 @@ DLPanelDef.prototype.BuildMessageContents = function(msg_buffer, pos) {
     pos = this.EncodeInt (this.bg_color.value, msg_buffer, pos);
     pos = this.EncodeInt (this.geometry, msg_buffer, pos);
     pos = this.EncodeInt (this.position, msg_buffer, pos);
+    pos = this.EncodeInt (this.layout, msg_buffer, pos);
     pos = this.EncodeInt (this.panel_location.x, msg_buffer, pos);
     pos = this.EncodeInt (this.panel_location.y, msg_buffer, pos);
     pos = this.EncodeInt (this.panel_location.x_size, msg_buffer, pos);
