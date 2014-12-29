@@ -27,6 +27,7 @@ text.text_action = 2; //TEXT_REPLACE
 text.message = 0;
 text.position = 0;
 text.parent_control = 12;
+text.is_final = 1;
 
 
 
