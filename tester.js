@@ -29,7 +29,7 @@ textbox.border_color = new dl.DLColor(0, 200, 0, 80);
 textbox.border_color.set_intensity (80);
 textbox.border_width = 1;
 textbox.scroll_type = 3; //SCROLL_V
-textbox.char_buffer_size = 200;
+textbox.char_buffer_size = 0;
 textbox.control = 12;
 
 var text = dl.DLText();
