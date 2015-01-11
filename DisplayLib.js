@@ -233,6 +233,7 @@ DLRect.prototype.BuildMessageContents = function(msg_buffer, pos) {
 }
 
 var MSG_TEXTBOX = 110;
+var ScrollType = Object.freeze ({SCROLL_NOT_SPECIFIED:0, SCROLL_NONE:1, SCROLL_H:2, SCROLL_V:3});
 
 function DLTextbox () {
     DLBase.call(this);
@@ -242,7 +243,9 @@ function DLTextbox () {
     this.bg_color = new DLColor;
     this.border_color = new DLColor;
     this.border_width = 1;
-    this.xy_visible = new XYInfo;
+    this.text_xy = new XYInfo;
+    this.char_buffer_size = 200;
+    this.scroll_type = ScrollType.SCROLL_NOT_SPECIFIED;
 }
 
 DLTextbox.prototype = Object.create(DLBase.prototype);
@@ -258,13 +261,45 @@ DLTextbox.prototype.BuildMessageContents = function(msg_buffer, pos) {
     pos = this.EncodeInt (this.bg_color.value, msg_buffer, pos);
     pos = this.EncodeInt (this.border_color.value, msg_buffer, pos);
     pos = this.EncodeInt (this.border_width, msg_buffer, pos);
-    pos = this.EncodeInt (this.xy_visible.x, msg_buffer, pos);
-    pos = this.EncodeInt (this.xy_visible.y, msg_buffer, pos);
-    pos = this.EncodeInt (this.xy_visible.x_size, msg_buffer, pos);
-    pos = this.EncodeInt (this.xy_visible.y_size, msg_buffer, pos);
+    pos = this.EncodeInt (this.text_xy.x, msg_buffer, pos);
+    pos = this.EncodeInt (this.text_xy.y, msg_buffer, pos);
+    pos = this.EncodeInt (this.text_xy.x_size, msg_buffer, pos);
+    pos = this.EncodeInt (this.text_xy.y_size, msg_buffer, pos);
+    pos = this.EncodeInt (this.char_buffer_size, msg_buffer, pos);
+    pos = this.EncodeInt (this.scroll_type, msg_buffer, pos);
     return pos;
 }
 
+
+var MSG_TEXTBOX_CMD = 161;
+var Command = Object.freeze ({CMD_NONE:0, CMD_SHOW:1, CMD_HIDE:2, CMD_MODIFY:3});
+var Scope = Object.freeze ({S_UNSPECIFIED:0, S_PARTICULAR_CONTROL:1, S_ALL_TEXTBOX:10,
+		S_ALL_TIMER:11, S_PAGE:30, S_ALL_PAGES:31});
+
+function DLTextboxCmd () {
+    DLBase.call(this);
+    this.type = MSG_TEXTBOX_CMD;
+    this.command = CMD_NONE;
+    this.scope = S_PARTICULAR_CONTROL;
+    this.selected_message = -1;
+    this.scroll_position = -1;
+    this.scroll_rate = -1;
+    this.scroll_effect = -1;
+}
+
+DLTextboxCmd.prototype = Object.create(DLBase.prototype);
+DLTextboxCmd.prototype.constructor = DLTextboxCmd;
+//override BuildMessageContents
+DLTextboxCmd.prototype.BuildMessageContents = function(msg_buffer, pos) {
+    //xy
+    pos = this.EncodeInt (this.command, msg_buffer, pos);
+    pos = this.EncodeInt (this.scope, msg_buffer, pos);
+    pos = this.EncodeInt (this.selected_message, msg_buffer, pos);
+    pos = this.EncodeInt (this.scroll_position, msg_buffer, pos);
+    pos = this.EncodeInt (this.scroll_rate, msg_buffer, pos);
+    pos = this.EncodeInt (this.scroll_effect, msg_buffer, pos);
+    return pos;
+}
 
 var MSG_TEXT = 150;
 var TextAction = Object.freeze ({TEXT_NOACTION:0, TEXT_APPEND:1, TEXT_REPLACE:2, TEXT_CLEAR:3});
@@ -295,15 +330,19 @@ DLText.prototype.BuildMessageContents = function(msg_buffer, pos) {
 }
 
 var MSG_PANELDEF = 151;
+var PanelGeometry = Object.freeze ({PG_NOT_SPECIFIED:0,PG_SINGLE:1, PG_SIDEBYSIDE:2, PG_FOURSQUARE:3});
+var PanelPosition = Object.freeze ({PP_NOT_SPECIFIED:0,PP_L:1, PP_R:2, PP_TL:1, PP_TR:2, PP_BL:3, PP_BR:4});
+var PanelLayout = Object.freeze ({PL_NORMAL:0, PL_REVERSED:1});
+
 
 function DLPanelDef () {
     DLBase.call(this);
     this.type = MSG_PANELDEF;
     this.fg_color = new DLColor;
     this.bg_color = new DLColor;
-    this.geometry=0;
-    this.position=0;
-    this.layout=0;
+    this.geometry=PanelGeometry.PG_NOT_SPECIFIED;
+    this.position=PanelPosition.PP_NOT_SPECIFIED;
+    this.layout=PanelLayout.PL_NORMAL;
     this.panel_location = new XYInfo;
     this.total_size = new XYInfo;
 }
@@ -347,12 +386,18 @@ function CreateDLPanelDef () {
     return new DLPanelDef;
 }
 
+function CreateDLTextboxCmd () {
+	return new DLTextboxCmd();
+}
+
 module.exports.DLRect = CreateDLRect;
 module.exports.DLTextbox = CreateDLTextbox;
 module.exports.DLText = CreateDLText;
 module.exports.DLPanelDef = CreateDLPanelDef;
 module.exports.XYInfo = XYInfo;
 module.exports.DLColor = DLColor;
+module.exports.DLTextboxCmd = DLTextboxCmd;
+
 
 
 
