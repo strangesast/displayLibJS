@@ -1,10 +1,13 @@
 //var net = require('net');
 var MSG_NONE = 0;
 
-var ObjectCategory = Object.freeze ({OC_UNSPECIFIED:0, OC_CONTROL:1, OC_SHAPE:2, OC_DATA:3})
+var ObjectCategory = Object.freeze ({OC_UNSPECIFIED:0, OC_CONTROL:1, OC_SHAPE:2, OC_DATA:3, OC_COMMAND:4})
 var ProtocolCode = Object.freeze (
 {MSG_END:0x01,MSG_START:0x02,START_ARRAY:0x03,END_ARRAY:0x04,START_TEXT:0x05,END_ELEMENT:0x06,
 START_NUMBER_POS:0x07,START_NUMBER_NEG:0x08,FIRST_LEGAL_CHAR:0x09,MAGIC_NUMBER:0x87});
+var DisplayAttribute = Object.freeze ({DA_NONE:0,DA_NORMAL:1,DA_HIDDEN:2,DA_FLASHING:3,DA_TBD_1:10});
+var GenericScope = Object.freeze ({GS_NONE:-1,GS_APPLIES_TO_ALL:-2});
+
 
 var XYInfo = function (a_x, a_y, a_x_size, a_y_size) {
     if (a_x === undefined) {
@@ -95,6 +98,7 @@ var DLBase = function () {
     this.control = 0;
     this.parent_control = 0;
     this.is_final = 0;
+    this.display_attribute = DisplayAttribute.DA_NONE;
     this.color = DLColor(0);
 }
 
@@ -197,6 +201,7 @@ DLBase.prototype.BuildMessage = function () {
     pos = this.EncodeInt (this.control, msg_buffer, pos);
     pos = this.EncodeInt (this.parent_control, msg_buffer, pos);
     pos = this.EncodeInt (this.is_final, msg_buffer, pos);
+    pos = this.EncodeInt (this.display_attribute, msg_buffer, pos);
     pos = this.BuildMessageContents (msg_buffer, pos);
     msg_buffer[pos] = ProtocolCode.MSG_END;
     pos++;
@@ -246,6 +251,7 @@ function DLTextbox () {
     this.text_xy = new XYInfo;
     this.char_buffer_size = 200;
     this.scroll_type = ScrollType.SCROLL_NOT_SPECIFIED;
+    this.preferred_font = "";
 }
 
 DLTextbox.prototype = Object.create(DLBase.prototype);
@@ -267,6 +273,7 @@ DLTextbox.prototype.BuildMessageContents = function(msg_buffer, pos) {
     pos = this.EncodeInt (this.text_xy.y_size, msg_buffer, pos);
     pos = this.EncodeInt (this.char_buffer_size, msg_buffer, pos);
     pos = this.EncodeInt (this.scroll_type, msg_buffer, pos);
+    pos = this.EncodeString (this.preferred_font, msg_buffer, pos);
     return pos;
 }
 
@@ -313,6 +320,7 @@ function DLText () {
     this.text = "";
     this.message = 0;
     this.text_action = 0;
+    this.preferred_font = "";
 }
 
 DLText.prototype = Object.create(DLBase.prototype);
@@ -325,6 +333,7 @@ DLText.prototype.BuildMessageContents = function(msg_buffer, pos) {
     pos = this.EncodeInt (this.position, msg_buffer, pos);
     pos = this.EncodeInt (this.message, msg_buffer, pos);
     pos = this.EncodeInt (this.text_action, msg_buffer, pos);
+    pos = this.EncodeString (this.preferred_font, msg_buffer, pos);
     pos = this.EncodeString (this.text, msg_buffer, pos);
     return pos;
 }
@@ -369,6 +378,33 @@ DLPanelDef.prototype.BuildMessageContents = function(msg_buffer, pos) {
 }
 
 
+var MSG_GENERIC_CMD = 160;
+
+var MSG_DISPLAY_CMD = 163;
+var DisplayRequest = Object.freeze ({DISPLAY_NO_REQUEST:0,DISPLAY_CLEAR:1});
+var UpdateType = Object.freeze ({UPDATE_NONE:0,UPDATE_SPECIFIED_ITEMS:1,UPDATE_ALL:2});
+
+
+function DLDisplayCmd () {
+    DLBase.call(this);
+    this.type = MSG_DISPLAY_CMD;
+    this.display_request = DisplayRequest.DISPLAY_NO_REQUEST;
+    this.update_type = UpdateType.UPDATE_NONE;
+}
+
+DLDisplayCmd.prototype = Object.create(DLBase.prototype);
+DLDisplayCmd.prototype.constructor = DLDisplayCmd;
+//override BuildMessageContents
+DLDisplayCmd.prototype.BuildMessageContents = function(msg_buffer, pos) {
+	pos = this.EncodeInt (this.display_request, msg_buffer, pos);
+	pos = this.EncodeInt (this.update_type, msg_buffer, pos);
+    return pos;
+}
+
+var MSG_TEXTBOX_CMD = 161;
+var MSG_TIMER_CMD = 162;
+
+
 
 function CreateDLText () {
     return new DLText();
@@ -390,13 +426,24 @@ function CreateDLTextboxCmd () {
 	return new DLTextboxCmd();
 }
 
+function CreateDLDisplayCmd () {
+	return new DLDisplayCmd();
+}
+
 module.exports.DLRect = CreateDLRect;
 module.exports.DLTextbox = CreateDLTextbox;
 module.exports.DLText = CreateDLText;
 module.exports.DLPanelDef = CreateDLPanelDef;
+module.exports.DLTextboxCmd = CreateDLTextboxCmd;
+module.exports.DLDisplayCmd = CreateDLDisplayCmd;
 module.exports.XYInfo = XYInfo;
 module.exports.DLColor = DLColor;
-module.exports.DLTextboxCmd = DLTextboxCmd;
+module.exports.ObjectCategory = ObjectCategory;
+module.exports.DisplayRequest = DisplayRequest;
+module.exports.UpdateType = UpdateType;
+module.exports.GenericScope = GenericScope;
+
+
 
 
 

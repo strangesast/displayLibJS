@@ -1,4 +1,4 @@
-var dl = require('./DisplayLIb');
+var dl = require('./DisplayLib');
 
 var panel_l = dl.DLPanelDef();
 panel_l.panel_location = new dl.XYInfo(0,0,60,32);
@@ -13,6 +13,12 @@ panel_r.total_size = new dl.XYInfo(0,0,120,32);
 panel_r.control = 2;
 panel_r.layout = 0; //normal
 panel_r.position = 2; //PP_R
+
+var clear_cmd = dl.DLDisplayCmd();
+clear_cmd.display_request = dl.DisplayRequest.DISPLAY_CLEAR;
+clear_cmd.update_type = dl.UpdateType.UPDATE_ALL;
+clear_cmd.panel = dl.GenericScope.GS_APPLIES_TO_ALL;
+
 
 var rect = dl.DLRect();
 rect.xy = new dl.XYInfo(0, 0, 120, 32);
@@ -72,6 +78,10 @@ socket.connect (PORT, HOST, function() {
     socket.write(send_buf);
 
     result = panel_r.BuildMessage ();
+    send_buf = result.result_buffer.slice(0,result.result_bytes);
+    socket.write(send_buf);
+
+    result = clear_cmd.BuildMessage ();
     send_buf = result.result_buffer.slice(0,result.result_bytes);
     socket.write(send_buf);
 
