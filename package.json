@@ -1,0 +1,7 @@
+{
+    "name": "displayLibJS",
+    "version": "0.1.0",
+    "description": "javascript display lib for scoreboard components",
+    "main": "displayLib.js",
+    "author": "Jim Zagrobelny"
+}
