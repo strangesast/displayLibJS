@@ -1,0 +1,17 @@
+#Visual Studio intermediate files
+/**/Debug/*
+/**/Release/*
+/**/ipch/*
+/**/build/*
+*.suo
+*.sdf
+*.opensdf
+*.lib
+
+
+
+
+
+
+
+
