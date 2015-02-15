@@ -4,9 +4,25 @@
 #include <v8.h>
 #include <node.h>
 #include <node_buffer.h>
+#ifdef _MSC_VER
 #include <assert.h>
 #include <windows.h>
-#include "mySocket.h"
+#else
+#include <pthread.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#endif
+#include "mysocket.h"
+
+#ifndef _MSC_VER
+#define DWORD int
+#define HANDLE int
+#define WINAPI
+#define LPVOID void*
+#define nullptr NULL
+
+#endif
 using namespace v8;
 
 
@@ -51,12 +67,17 @@ private:
 	};
 
 	static msgQueue	*m_pSingle;
+#ifdef _MSC_VER
 	DWORD			m_threadId;
-	int				m_refcount;
 	HANDLE			m_hThread;
+#else
+	pthread_t		m_threadId;
+	pthread_t		m_hThread;
+#endif
+	int				m_refcount;
 	HANDLE			m_lock;
 	bool		m_exit;
-	int m_item_count;
+//	int m_item_count;
 	QueueEntry m_list;
 	char			m_emulator_ip[20];
 	int				m_emulator_port;

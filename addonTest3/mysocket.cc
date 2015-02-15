@@ -1,9 +1,19 @@
 #include <stdio.h>
-#include "mySocket.h"
+#include "mysocket.h"
 
 #ifdef _MSC_VER
 #include <WinSock.h>
 #pragma comment(lib,"Ws2_32.lib")
+#else
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#define SOCKET_ERROR -1
 #endif
 
 mySocket::mySocket() : m_fpLog(0), m_sock(-1)
@@ -18,7 +28,7 @@ bool mySocket::Open (const char *pszIP, int port)
 {
 	bool status = false;
 	if (!m_fpLog) {
-		m_fpLog = fopen ("addonlog.txt", "w");
+		m_fpLog = fopen ("log_socket.txt", "w");
 	}
 	fprintf (m_fpLog, "socket open\n");
 
@@ -34,6 +44,7 @@ bool mySocket::Open (const char *pszIP, int port)
 		}
 #endif
 		//Create socket
+#ifdef _MSC_VER
 		struct sockaddr_in server;
 		m_sock = socket(AF_INET , SOCK_STREAM , IPPROTO_TCP);
 
@@ -62,6 +73,36 @@ bool mySocket::Open (const char *pszIP, int port)
 		else {
 			fprintf (m_fpLog, "error creating socket\n");
 		}
+#else
+		struct sockaddr_in server;
+		m_sock = socket(AF_INET , SOCK_STREAM , IPPROTO_TCP);
+
+		if (m_sock != -1) {
+		
+			fprintf (m_fpLog, "socket create ok\n");
+			if (*pszIP == '\0')
+				pszIP = "127.0.0.1";
+			server.sin_addr.s_addr = inet_addr( pszIP );
+
+			server.sin_family = AF_INET;
+			server.sin_port = htons(port);
+
+			//Connect to remote server
+			fprintf (m_fpLog, "socket connecting: ip[%s] port[%d]\n", pszIP, port);
+			if (connect(m_sock , (struct sockaddr *)&server , sizeof(server)) < 0) {
+				fprintf (m_fpLog, "error connecting\n");
+				close (m_sock);
+				m_sock = -1;
+			}
+			else {
+				status = true;
+				fprintf (m_fpLog, "connect ok\n");
+			}
+		}
+		else {
+			fprintf (m_fpLog, "error creating socket\n");
+		}
+#endif
 	}
 	return status;
 }
@@ -82,6 +123,7 @@ bool mySocket::Send (const char *pszData, int length)
 			fprintf (m_fpLog, "SEND failed\n");
 		}
 		else {
+			fprintf (m_fpLog, "Send %d bytes", iResult);
 			bOK = true;
 		}
 	}
@@ -91,7 +133,10 @@ bool mySocket::Send (const char *pszData, int length)
 void mySocket::Close ()
 {
 	fprintf (m_fpLog, "closing\n");
+#ifdef _MSC_VER
 	closesocket (m_sock);
+#else
+#endif
 	m_sock = -1;
 #ifdef _MSC_VER
 	WSACleanup();

@@ -1,5 +1,5 @@
 var dl = require('./DisplayLib');
-var display = require('./build/Release/addonTest3');
+var display = require('./build/Release/addontest3');
 
 var panel_l = dl.DLPanelDef();
 panel_l.panel_location = new dl.XYInfo(0,0,60,32);
@@ -50,7 +50,7 @@ text.parent_control = 12;
 
 var text2  = dl.DLText();
 text2.message = 0;
-text2.text = " JUMPS";
+text2.text = " JUMPED";
 text2.fg_color = new dl.DLColor(121,158,215);
 text2.text_action = 1; //TEXT_APPEND
 text2.parent_control = 12;
@@ -71,7 +71,7 @@ text3.is_final = 1;
 //var port = display.connect();
 //display.open ();
 
-display.set_emulator ("127.0.0.1", 1001);
+display.set_emulator ("192.168.1.69", 1001);
 console.log ("about to write");
 var result = panel_l.BuildMessage ();
 var send_buf = result.result_buffer.slice(0,result.result_bytes);

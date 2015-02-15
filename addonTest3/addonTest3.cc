@@ -86,13 +86,13 @@ Handle<Value> Send(const Arguments& args) {
 	Local<Object> bufferObj    = args[0]->ToObject();
 	char*         bufferData   = node::Buffer::Data(bufferObj);
 	size_t        bufferLength = node::Buffer::Length(bufferObj); 
-	FILE *fpLog = fopen ("AddonLog.txt", "a");
-	fprintf (fpLog, "add item: buffer[%d] length[%d]\n", bufferData, bufferLength);
+	FILE *fpLog = fopen ("log_addon.txt", "a");
+	fprintf (fpLog, "add item: buffer[%d] length[%d]\n", (int)bufferData, bufferLength);
 	fclose (fpLog);
 
   msgQueue::TheQueue().AddItem (bufferData, bufferLength);
-	fpLog = fopen ("AddonLog.txt", "a");
-	fprintf (fpLog, "add item: done\n", bufferData, bufferLength);
+	fpLog = fopen ("log_addon.txt", "a");
+	fprintf (fpLog, "add item: done\n");
 	fclose (fpLog);
 
 
@@ -107,4 +107,4 @@ void Init(Handle<Object> target) {
       FunctionTemplate::New(SetEmulator)->GetFunction());
 }
 
-NODE_MODULE(addonTest3, Init)
+NODE_MODULE(addontest3, Init)
