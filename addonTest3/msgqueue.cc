@@ -10,7 +10,7 @@ msgQueue *msgQueue::m_pSingle = nullptr;
 
 msgQueue::msgQueue () :
 m_threadId(0), m_hThread(0), m_refcount(0), m_lock(0), 
-m_exit(false), m_emulator_port(0), m_fpLog(nullptr)
+m_exit(false), m_emulator_port(0), m_request_count(0), m_fpLog(nullptr)
 {
 	*m_emulator_ip = '\0';
 }
@@ -71,6 +71,11 @@ void msgQueue::SetEmulator (const char *ip, int port)
 	m_emulator_port = port;
 }
 
+int msgQueue::GetRequestCount()
+{
+	return m_request_count;
+}
+
 
 int msgQueue::AddItem (char *bufferData, int length)
 {
@@ -88,6 +93,7 @@ int msgQueue::AddItem (char *bufferData, int length)
 	how_many++;
 	fprintf (m_fpLog, "AddItem: item added - this[%d] total[%d]\n", 
 		(int)this, how_many);
+	m_request_count++;
 	return how_many;
 
 }
@@ -104,7 +110,6 @@ void msgQueue::Loop()
 		fprintf (fpLog, "Loop init: open socket - ip[%s] port[%d] status[%d]\n", 
 			m_emulator_ip, m_emulator_port, status);
 		status = client.Open (m_emulator_ip, m_emulator_port);
-//		status = client.Open ("127.0.0.1", 1001);
 	}
 	else {
 		fprintf (fpLog, "Loop init: no emulator\n");
@@ -120,7 +125,7 @@ void msgQueue::Loop()
 		sleep_time.tv_nsec = 50*1000000;
 		nanosleep (&sleep_time, NULL);
 #endif
-		fprintf (fpLog, "Loop: checking..\n");
+//		fprintf (fpLog, "Loop: checking..\n");
 
 		//take an item off the top
 		QueueEntry *pTop = m_list.next;
@@ -146,10 +151,6 @@ DWORD WINAPI msgQueue::Thread_Start (LPVOID lpParam)
 	msgQueue *pThis = (msgQueue*)lpParam;
 	pThis->Loop ();
 	return 0;
-}
-
-void msgQueue::StartLoop()
-{
 }
 
 bool msgQueue::lock ()

@@ -33,13 +33,12 @@ public:
 	static msgQueue &TheQueue();
 
 	void SetEmulator (const char *ip, int port);
+	int GetRequestCount ();
 	void Start();
 	void Stop();
 	int AddItem (char *bufferData, int length);
 	void Loop();
-//	LPTHREAD_START_ROUTINE
 	static DWORD WINAPI Thread_Start (LPVOID lpParam);
-	void StartLoop();
 
 
 private:
@@ -77,10 +76,10 @@ private:
 	int				m_refcount;
 	HANDLE			m_lock;
 	bool		m_exit;
-//	int m_item_count;
 	QueueEntry m_list;
 	char			m_emulator_ip[20];
 	int				m_emulator_port;
+	int				m_request_count;
 
 	FILE *m_fpLog;
 };

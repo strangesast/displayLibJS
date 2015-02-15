@@ -71,7 +71,13 @@ text3.is_final = 1;
 //var port = display.connect();
 //display.open ();
 
-display.set_emulator ("192.168.1.69", 1001);
+function reportStatus(buf) {
+  console.log(buf.toString());
+}
+
+
+//display.set_emulator ("192.168.1.69", 1001);
+display.set_emulator ("127.0.0.1", 1001);
 console.log ("about to write");
 var result = panel_l.BuildMessage ();
 var send_buf = result.result_buffer.slice(0,result.result_bytes);
@@ -89,6 +95,7 @@ setTimeout(function() {
   console.log('wait ended');
 }, 5000);
 
+display.get_status(reportStatus);
 
 result = rect.BuildMessage ();
 send_buf = result.result_buffer.slice(0,result.result_bytes);
@@ -108,11 +115,11 @@ display.send(send_buf);
 
 result = text3.BuildMessage ();
 send_buf = result.result_buffer.slice(0,result.result_bytes);
-display.send(send_buf);
+display.send_request(send_buf, reportStatus);
 
 console.log ("written");
 
-
+display.get_status(reportStatus);
 
 setTimeout(function() {
   console.log('hello world!');
