@@ -1,0 +1,17 @@
+{
+  "name": "Display Control Addon",
+  "version": "1.0.0",
+  "description": "Send display commands to the remote display controller",
+  "main": "",
+  "private": true,
+  "scripts": {
+    "test": "",
+    "install": "node-gyp rebuild"
+  },
+  "gypfile": true,
+  "dependencies": {
+    "bindings": "~1.2.1"
+  },
+  "author": "Jim Zagrobelny",
+  "license": "ISC"
+}
