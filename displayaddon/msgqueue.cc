@@ -4,6 +4,7 @@
 */
 #include "msgqueue.h"
 #include "mysocket.h"
+#include "displayusb.h"
 #ifndef _MSC_VER
 #include <time.h>
 #endif
@@ -81,11 +82,11 @@ int msgQueue::GetRequestCount()
 }
 
 
-int msgQueue::AddItem (char *bufferData, int length)
+int msgQueue::AddItem (char *bufferData, int length, int dest)
 {
 	int how_many = 0;
 	QueueEntry *pQ = new QueueEntry();
-	pQ->Create (bufferData, length);
+	pQ->Create (bufferData, length, dest);
 	QueueEntry *pTarget = &m_list;
 	//find end
 	while (pTarget->next) {
@@ -109,15 +110,22 @@ void msgQueue::Loop()
 
 	//instantiate socket connection
 	mySocket client;
-	bool status = false;
+	bool client_status = false;
+	bool usb_status = false;
 	if (*m_emulator_ip != '\0') {
-		fprintf (fpLog, "Loop init: open socket - ip[%s] port[%d] status[%d]\n", 
-			m_emulator_ip, m_emulator_port, status);
-		status = client.Open (m_emulator_ip, m_emulator_port);
+		client_status = client.Open (m_emulator_ip, m_emulator_port);
+		fprintf (fpLog, "Loop init: open socket - ip[%s] port[%d] status[%s]\n", 
+			m_emulator_ip, m_emulator_port, client_status?"ok":"fail");
 	}
 	else {
 		fprintf (fpLog, "Loop init: no emulator\n");
 	}
+
+	//open the usb port
+	displayUSB usb_client;
+	fprintf (fpLog, "Loop init: opening usb\n");
+	usb_status = usb_client.Open();
+	fprintf (fpLog, "Loop init: usb open - status[%s]\n", usb_status?"ok":"fail");
 
 	fprintf (fpLog, "Loop: beginning monitor queue - this[%d] exit_flag[%d]\n", (int)this, m_exit);
 	while (!m_exit) {
@@ -136,11 +144,12 @@ void msgQueue::Loop()
 		if (pTop) {
 			fprintf (fpLog, "processing item\n");
 			m_list.next = pTop->next;
-			fprintf (fpLog, "Sending item: ptr[%d] len[%d]\n", 
-				(int)pTop->msg, pTop->length);
-			status = client.Send (pTop->msg, pTop->length);
-			fprintf (fpLog, "Send complete: status[%d]\n", status);
-
+			fprintf (fpLog, "Sending item: ptr[%d] len[%d] dest[%d]\n", 
+				(int)pTop->msg, pTop->length, pTop->dest);
+			client_status = client.Send (pTop->msg, pTop->length);
+			usb_status = usb_client.Send (pTop->msg, pTop->length, pTop->dest);
+			fprintf (fpLog, "Send complete: simulator[%s] usb[%s]\n", 
+				client_status?"ok":"fail", usb_status?"ok":"fail");
 			pTop->Destroy();
 			delete pTop;
 		}

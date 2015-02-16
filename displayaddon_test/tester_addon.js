@@ -81,11 +81,11 @@ display.set_emulator ("127.0.0.1", 1001);
 console.log ("about to write");
 var result = panel_l.BuildMessage ();
 var send_buf = result.result_buffer.slice(0,result.result_bytes);
-display.send(send_buf);
+display.send_config(send_buf, 1);
 
 result = panel_r.BuildMessage ();
 send_buf = result.result_buffer.slice(0,result.result_bytes);
-display.send(send_buf);
+display.send_config(send_buf, 2);
 
 result = clear_cmd.BuildMessage ();
 send_buf = result.result_buffer.slice(0,result.result_bytes);

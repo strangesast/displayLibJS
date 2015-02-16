@@ -155,10 +155,33 @@ Handle<Value> Send(const Arguments& args) {
 	return Undefined();
 }
 
+Handle<Value> SendConfig(const Arguments& args) {
+	HandleScope scope;
+
+	Local<Object> bufferObj    = args[0]->ToObject();
+	char*         bufferData   = node::Buffer::Data(bufferObj);
+	size_t        bufferLength = node::Buffer::Length(bufferObj); 
+	int dest = args[1]->NumberValue();
+	FILE *fpLog = fopen ("log_addon.txt", "a");
+	fprintf (fpLog, "senconfig item: buffer[%d] length[%d] dest[%d]\n", 
+		(int)bufferData, bufferLength, dest);
+	fclose (fpLog);
+
+	msgQueue::TheQueue().AddItem (bufferData, bufferLength, dest);
+	fpLog = fopen ("log_addon.txt", "a");
+	fprintf (fpLog, "add item: done\n");
+	fclose (fpLog);
+
+
+	return Undefined();
+}
+
 void Init(Handle<Object> target) {
 	HandleScope scope;
 	target->Set(String::New("send"),
 		FunctionTemplate::New(Send)->GetFunction());
+	target->Set(String::New("send_config"),
+		FunctionTemplate::New(SendConfig)->GetFunction());
 	target->Set(String::New("set_emulator"),
 		FunctionTemplate::New(SetEmulator)->GetFunction());
 	target->Set(String::New("get_status"),

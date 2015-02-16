@@ -139,13 +139,14 @@ void mySocket::Close ()
 {
 	fprintf (m_fpLog, "closing\n");
 #ifdef _MSC_VER
-	closesocket (m_sock);
+	if (m_sock != -1)
+		closesocket (m_sock);
+	WSACleanup();
 #else
+	if (m_sock != -1)
+		close (m_sock);
 #endif
 	m_sock = -1;
-#ifdef _MSC_VER
-	WSACleanup();
-#endif
 }
 
 

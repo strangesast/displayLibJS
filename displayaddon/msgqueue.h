@@ -40,7 +40,7 @@ public:
 	int GetRequestCount ();
 	void Start();
 	void Stop();
-	int AddItem (char *bufferData, int length);
+	int AddItem (char *bufferData, int length, int dest=-1);
 	void Loop();
 	static DWORD WINAPI Thread_Start (LPVOID lpParam);
 
@@ -51,14 +51,16 @@ private:
 	struct QueueEntry {
 		char *msg;
 		int length;
+		int dest;
 		QueueEntry		*next;
 
-		QueueEntry():msg(nullptr), length(0), next(nullptr) {}
+		QueueEntry():msg(nullptr), length(0), dest(-1), next(nullptr) {}
 		~QueueEntry() {}
-		void Create (char *msg_a, int length_a) {
+		void Create (char *msg_a, int length_a, int dest_a=-1) {
 			msg = new char[length_a+10];
 			memcpy (msg, msg_a, length_a);
 			length = length_a;
+			dest = dest_a;
 		}
 		void Destroy () {
 			if (msg) {
