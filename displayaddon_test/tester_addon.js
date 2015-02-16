@@ -76,8 +76,8 @@ function reportStatus(buf) {
 }
 
 
-//display.set_emulator ("192.168.1.69", 1001);
-display.set_emulator ("127.0.0.1", 1001);
+display.set_emulator ("192.168.1.69", 1001);
+//display.set_emulator ("127.0.0.1", 1001);
 console.log ("about to write");
 var result = panel_l.BuildMessage ();
 var send_buf = result.result_buffer.slice(0,result.result_bytes);

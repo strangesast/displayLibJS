@@ -85,6 +85,7 @@ bool displayUSB::Open ()
 				status, (int)handle);
 			if (handle) {
 				bool bOk = true;
+				int res=0;
 
 				if (libusb_kernel_driver_active (handle, 0)) {
 					fprintf (m_fpLog, "kernel driver attached\n");
@@ -131,7 +132,7 @@ bool displayUSB::Send (const char *pszData, int length, int dest)
 			int write_pos = 0;
 			while (write_pos < length) {
 				//break the message into 64 byte packets
-				int write_chunk = min (64, length-write_pos);
+				int write_chunk = std::min (64, length-write_pos);
 				unsigned char usb_buffer[64];
 				memset (usb_buffer, 0, sizeof(usb_buffer));
 				memcpy (usb_buffer, usb_buffer+write_pos, write_chunk);
@@ -158,7 +159,7 @@ void displayUSB::Close ()
 #else
 	fprintf (m_fpLog, "closing\n");
 	for (int i=0; i<m_usbList_count; i++) {
-		usb_close (m_usbList[i].device_handle);
+		libusb_close (m_usbList[i].device_handle);
 	}
 #endif
 }

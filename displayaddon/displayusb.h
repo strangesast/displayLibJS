@@ -30,7 +30,7 @@ private:
 		libusb_device_handle *device_handle;
 		int port;
 
-		UsbInfo ():device_handle(nullptr), port(0) {}
+		UsbInfo ():device_handle(NULL), port(0) {}
 		~UsbInfo () {}
 		const UsbInfo &operator= (const UsbInfo &ref) {
 			if (this != &ref) {
