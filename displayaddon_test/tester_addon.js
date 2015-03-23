@@ -1,5 +1,5 @@
 var dl = require('./DisplayLib');
-var display = require('./displayaddon');
+var display = require('../displayaddon/build/Release/displayaddon');
 
 var panel_l = dl.DLPanelDef();
 panel_l.panel_location = new dl.XYInfo(0,0,60,32);
@@ -76,7 +76,7 @@ function reportStatus(buf) {
 }
 
 
-display.set_emulator ("192.168.1.69", 1001);
+//display.set_emulator ("192.168.1.69", 1001);
 //display.set_emulator ("127.0.0.1", 1001);
 console.log ("about to write");
 var result = panel_l.BuildMessage ();

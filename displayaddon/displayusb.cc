@@ -34,6 +34,8 @@ using namespace std;
 
 #endif
 
+#define LOG_MESSAGES 0
+
 displayUSB::displayUSB() : m_usbList_count(0), m_fpLog(0)
 {
 }
@@ -122,9 +124,15 @@ bool displayUSB::IsOpen ()
 {
 	return m_usbList_count > 0;
 }
+static int g_lastmsg=1;
 //destination is 1-based: 1 = first USB port, 2 = second USB port, etc
 bool displayUSB::Send (const char *pszData, int length, int dest)
 {
+#if LOG_MESSAGES == 1
+	char msgfile[20];
+	sprintf (msgfile, "log_msg%02d.txt", g_lastmsg++);
+	FILE *fp_msg = fopen (msgfile, "w");
+#endif
 	bool bOK = false;
 	//send to all interfaces
 	for (int i=0; i<m_usbList_count; i++) {
@@ -135,13 +143,18 @@ bool displayUSB::Send (const char *pszData, int length, int dest)
 				int write_chunk = std::min (64, length-write_pos);
 				unsigned char usb_buffer[64];
 				memset (usb_buffer, 0, sizeof(usb_buffer));
-				memcpy (usb_buffer, usb_buffer+write_pos, write_chunk);
+				memcpy (usb_buffer, pszData+write_pos, write_chunk);
 				write_pos += write_chunk;
 				int numbytes = 0;
 				int res = 0;
 #ifdef _MSC_VER
 #else
 				res = libusb_interrupt_transfer(m_usbList[i].device_handle, 0x4, usb_buffer, 64, &numbytes, 500);
+#if LOG_MESSAGES == 1
+				for (int x=0; x<64; x++)
+					fputc (usb_buffer[x], fp_msg);
+#endif
+
 #endif
 				fprintf (m_fpLog, "send: dest[%d] result[%d] bytes[%d] errno[%d]\n", 
 					i, res, numbytes, errno);
@@ -150,6 +163,9 @@ bool displayUSB::Send (const char *pszData, int length, int dest)
 			}
 		}
 	}
+#if LOG_MESSAGES == 1
+	fclose (fp_msg);
+#endif
 	return bOK;
 }
 
