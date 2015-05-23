@@ -18,6 +18,8 @@ var clear_cmd = dl.DLDisplayCmd();
 clear_cmd.display_request = dl.DisplayRequest.DISPLAY_CLEAR;
 clear_cmd.update_type = dl.UpdateType.UPDATE_ALL;
 clear_cmd.panel = dl.GenericScope.GS_APPLIES_TO_ALL;
+//clear_cmd.bright_level = 100;
+//clear_cmd.bright_range = 100;
 
 
 var rect = dl.DLRect();
