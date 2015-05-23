@@ -390,6 +390,8 @@ function DLDisplayCmd () {
     this.type = MSG_DISPLAY_CMD;
     this.display_request = DisplayRequest.DISPLAY_NO_REQUEST;
     this.update_type = UpdateType.UPDATE_NONE;
+    this.bright_level = -1;
+    this.bright_range = -1;
 }
 
 DLDisplayCmd.prototype = Object.create(DLBase.prototype);
@@ -398,6 +400,8 @@ DLDisplayCmd.prototype.constructor = DLDisplayCmd;
 DLDisplayCmd.prototype.BuildMessageContents = function(msg_buffer, pos) {
 	pos = this.EncodeInt (this.display_request, msg_buffer, pos);
 	pos = this.EncodeInt (this.update_type, msg_buffer, pos);
+	pos = this.EncodeInt (this.bright_level, msg_buffer, pos);
+	pos = this.EncodeInt (this.bright_range, msg_buffer, pos);
     return pos;
 }
 
