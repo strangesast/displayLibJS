@@ -11,6 +11,9 @@
         'libraries': [
          '-lusb-1.0',
         ],
+        'cflags_cc' : [
+         '-fpermissive',
+        ]
       }],
     ]
   }]
