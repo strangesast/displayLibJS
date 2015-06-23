@@ -1,3 +1,4 @@
+# displayLib
 MSG_NONE = 0
 
 ObjectCategory = Object.freeze(
@@ -34,6 +35,7 @@ GenericScope = Object.freeze(
   GS_APPLIES_TO_ALL: -2
 )
 
+# positional information, used by most DLBase derivatives
 class XYInfo
   constructor: (@x=0, @y=0, @x_size=0, @y_size=0) ->
   @Clear = ->
@@ -42,6 +44,7 @@ class XYInfo
     @x_size = 0
     @y_size = 0
 
+# object color definition
 DLColor = (red, green, blue, intensity) ->
   if not red?
     @value = -1
@@ -82,6 +85,7 @@ DLColor = (red, green, blue, intensity) ->
   @getValue = ->
     @value
 
+# object base definition
 class DLBase
   @type: MSG_NONE
   @category: ObjectCategory.OC_UNSPECIFIED
@@ -177,6 +181,7 @@ class DLBase
 
 MSG_RECT = 101
 
+# rectagle shape for styling
 class DLRect extends DLBase
   @type: MSG_RECT
   @xy: new XYInfo
@@ -199,6 +204,7 @@ class DLRect extends DLBase
 
 MSG_TEXTBOX = 110;
 
+# textbox
 class DLTextbox extends DLBase
   @type: MSG_TEXTBOX
   @xy: new XYInfo
@@ -279,6 +285,7 @@ MessageCommand = Object.freeze
 CMD_NONE = 0 # this was missing in original version
 S_PARTICULAR_CONTROL = 1 # as was this
 
+# communicates action on specified textbox
 class DLTextboxCmd extends DLBase
   @type: MSG_TEXTBOX_CMD
   @command: CMD_NONE
@@ -322,6 +329,7 @@ TextFlag = Object.freeze
   TF_LINEBREAK: 1
   TF_MSGEND: 2
 
+# text contained in textbox
 class DLText extends DLBase
   @type: MSG_TEXT
   @fg_color: new DLColor
@@ -377,6 +385,8 @@ PanelLayout = Object.freeze
   PL_NORMAL: 0
   PL_REVERSED: 1
 
+
+# used to specify absolute position and size of 'panel'
 class DLPanelDef extends DLBase
   @type: MSG_PANELDEF
   @fg_color: new DLColor
@@ -419,6 +429,7 @@ UpdateType = Object.freeze
   UPDATE_SPECIFIED_ITEMS: 1
   UPDATE_ALL: 2
 
+# used to specify display behavior
 class DLDisplayCmd extends DLBase
   @type: MSG_DISPLAY_CMD
   @display_request: DisplayRequest.DISPLAY_NO_REQUEST
@@ -438,3 +449,21 @@ class DLDisplayCmd extends DLBase
 
 MSG_TEXTBOX_CMD = 161
 MSG_TIMER_CMD = 162
+
+
+# names here may be better off unchanged
+exports = 
+  'Rect' : DLRect
+  'Textbox' : DLTextbox
+  'Text' : DLText
+  'PanelDef' : DLPanelDef
+  'TextboxCmd' : DLTextboxCmd
+  'DisplayCmd' : DLDisplayCmd
+  'XYInfo' : XYInfo
+  'Color' : DLColor
+  'ObjectCategory' : ObjectCategory
+  'DisplayRequest' : DisplayRequest
+  'UpdateType' : UpdateType
+  'GenericScope' : GenericScope
+
+module.exports = exports
