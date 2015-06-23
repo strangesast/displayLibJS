@@ -196,6 +196,9 @@ class DLRect extends DLBase
       @EncodeInt curr, msg_buffer, prev
     , pos
 
+
+MSG_TEXTBOX = 110;
+
 class DLTextbox extends DLBase
   @type: MSG_TEXTBOX
   @xy: new XYInfo
@@ -272,6 +275,9 @@ MessageCommand = Object.freeze
   MESSAGE_CYCLE_RATE: 20
   MESSAGE_POSTS_MAX: 21
 
+
+CMD_NONE = 0 # this was missing in original version
+S_PARTICULAR_CONTROL = 1 # as was this
 
 class DLTextboxCmd extends DLBase
   @type: MSG_TEXTBOX_CMD
@@ -366,6 +372,10 @@ PanelPosition = Object.freeze
   PP_TR: 2
   PP_BL: 3
   PP_BR: 4
+
+PanelLayout = Object.freeze
+  PL_NORMAL: 0
+  PL_REVERSED: 1
 
 class DLPanelDef extends DLBase
   @type: MSG_PANELDEF
