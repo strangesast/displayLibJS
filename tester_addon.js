@@ -1,4 +1,5 @@
 var dl = require('./DisplayLib');
+var display = require('../displayaddon/build/Release/displayaddon');
 
 var panel_l = dl.DLPanelDef();
 panel_l.panel_location = new dl.XYInfo(0,0,60,32);
@@ -18,6 +19,7 @@ var clear_cmd = dl.DLDisplayCmd();
 clear_cmd.display_request = dl.DisplayRequest.DISPLAY_CLEAR;
 clear_cmd.update_type = dl.UpdateType.UPDATE_ALL;
 clear_cmd.panel = dl.GenericScope.GS_APPLIES_TO_ALL;
+clear_cmd.is_final = 1;
 
 
 var rect = dl.DLRect();
@@ -48,7 +50,7 @@ text.parent_control = 12;
 
 var text2  = dl.DLText();
 text2.message = 0;
-text2.text = " JUMPS";
+text2.text = " JUMPED";
 text2.fg_color = new dl.DLColor(121,158,215);
 text2.text_action = 1; //TEXT_APPEND
 text2.parent_control = 12;
@@ -60,51 +62,66 @@ text3.text_action = 1; //TEXT_APPEND
 text3.parent_control = 12;
 text3.is_final = 1;
 
+//    var result = panel_l.BuildMessage ();
+//    var send_buf = result.result_buffer.slice(0,result.result_bytes);
+//    console.log ("about to write");
+//    console.log(addon.test (send_buf));
+
+//console.log ("about to open")
+//var port = display.connect();
+//display.open ();
+
+function reportStatus(buf) {
+  console.log(buf.toString());
+}
 
 
-var net = require('net');
+//display.set_emulator ("192.168.1.69", 1001);
+display.set_emulator ("127.0.0.1", 1001);
+console.log ("about to write");
+var result = panel_l.BuildMessage ();
+var send_buf = result.result_buffer.slice(0,result.result_bytes);
+display.send_config(send_buf, 1);
 
+result = panel_r.BuildMessage ();
+send_buf = result.result_buffer.slice(0,result.result_bytes);
+display.send_config(send_buf, 2);
 
-var HOST = '127.0.0.1';
-var PORT = '1001';
+result = clear_cmd.BuildMessage ();
+send_buf = result.result_buffer.slice(0,result.result_bytes);
+display.send(send_buf);
 
-var socket = new net.Socket();
-//var mybuffer = new Buffer([0x02,0x03,0x87]);
+setTimeout(function() {
+  console.log('wait ended');
+}, 5000);
 
-socket.connect (PORT, HOST, function() {
-    console.log ("about to write");
-    var result = panel_l.BuildMessage ();
-    var send_buf = result.result_buffer.slice(0,result.result_bytes);
-    socket.write(send_buf);
+display.get_status(reportStatus);
 
-    result = panel_r.BuildMessage ();
-    send_buf = result.result_buffer.slice(0,result.result_bytes);
-    socket.write(send_buf);
+result = rect.BuildMessage ();
+send_buf = result.result_buffer.slice(0,result.result_bytes);
+display.send(send_buf);
 
-    result = clear_cmd.BuildMessage ();
-    send_buf = result.result_buffer.slice(0,result.result_bytes);
-    socket.write(send_buf);
+result = textbox.BuildMessage ();
+send_buf = result.result_buffer.slice(0,result.result_bytes);
+display.send(send_buf);
 
-    result = rect.BuildMessage ();
-    send_buf = result.result_buffer.slice(0,result.result_bytes);
-    socket.write(send_buf);
+result = text.BuildMessage ();
+send_buf = result.result_buffer.slice(0,result.result_bytes);
+display.send(send_buf);
 
-    result = textbox.BuildMessage ();
-    send_buf = result.result_buffer.slice(0,result.result_bytes);
-    socket.write(send_buf);
+result = text2.BuildMessage ();
+send_buf = result.result_buffer.slice(0,result.result_bytes);
+display.send(send_buf);
 
-    result = text.BuildMessage ();
-    send_buf = result.result_buffer.slice(0,result.result_bytes);
-    socket.write(send_buf);
+result = text3.BuildMessage ();
+send_buf = result.result_buffer.slice(0,result.result_bytes);
+display.send_request(send_buf, reportStatus);
 
-    result = text2.BuildMessage ();
-    send_buf = result.result_buffer.slice(0,result.result_bytes);
-    socket.write(send_buf);
+console.log ("written");
 
-    result = text3.BuildMessage ();
-    send_buf = result.result_buffer.slice(0,result.result_bytes);
-    socket.write(send_buf);
+display.get_status(reportStatus);
 
-    console.log ("written");
-    socket.destroy();
-})
+setTimeout(function() {
+  console.log('hello world!');
+}, 5000);
+

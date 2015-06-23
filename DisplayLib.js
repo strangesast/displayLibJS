@@ -238,7 +238,6 @@ DLRect.prototype.BuildMessageContents = function(msg_buffer, pos) {
 }
 
 var MSG_TEXTBOX = 110;
-var ScrollType = Object.freeze ({SCROLL_NOT_SPECIFIED:0, SCROLL_NONE:1, SCROLL_H:2, SCROLL_V:3});
 
 function DLTextbox () {
     DLBase.call(this);
@@ -250,7 +249,6 @@ function DLTextbox () {
     this.border_width = 1;
     this.text_xy = new XYInfo;
     this.char_buffer_size = 200;
-    this.scroll_type = ScrollType.SCROLL_NOT_SPECIFIED;
     this.preferred_font = "";
 }
 
@@ -272,16 +270,23 @@ DLTextbox.prototype.BuildMessageContents = function(msg_buffer, pos) {
     pos = this.EncodeInt (this.text_xy.x_size, msg_buffer, pos);
     pos = this.EncodeInt (this.text_xy.y_size, msg_buffer, pos);
     pos = this.EncodeInt (this.char_buffer_size, msg_buffer, pos);
-    pos = this.EncodeInt (this.scroll_type, msg_buffer, pos);
     pos = this.EncodeString (this.preferred_font, msg_buffer, pos);
     return pos;
 }
 
 
 var MSG_TEXTBOX_CMD = 161;
-var Command = Object.freeze ({CMD_NONE:0, CMD_SHOW:1, CMD_HIDE:2, CMD_MODIFY:3});
-var Scope = Object.freeze ({S_UNSPECIFIED:0, S_PARTICULAR_CONTROL:1, S_ALL_TEXTBOX:10,
-		S_ALL_TIMER:11, S_PAGE:30, S_ALL_PAGES:31});
+var ScrollCommand = Object.freeze ({SCROLL_NONE:-1, SCROLL_AUTO_BY_LINE:0, SCROLL_AUTO_BY_PAGE:1, SCROLL_MANUAL:2,
+		SCROLL_PAUSE:10, SCROLL_RESUME:11, SCROLL_UP:12, SCROLL_DOWN:13,
+		SCROLL_TO_TOP:14, SCROLL_TO_BOTTOM:15, SCROLL_TO_POSITION:16});
+var ScrollOrientation = Object.freeze ({SO_NONE:-1, SO_NOSCROLL:1, SO_SCROLL_H:2, SO_SCROLL_V:3});
+var ScrollEffect = Object.freeze ({SE_NONE:-1, SE_NORMAL:0, SE_SPORTSYNC:1,
+		SE_DIVIDER_BETWEEN_POSTS:2});
+var MessageCommand = Object.freeze ({MESSAGE_NONE:-1, MESSAGE_SELECT:0,
+		MESSAGE_CYCLE_OFF:1, MESSAGE_CYCLE_ON:2, MESSAGE_CYCLE_PAUSE:3, MESSAGE_CYCLE_RESUME:4,
+		MESSAGE_NEXT:5, MESSAGE_PREV:6, MESSAGE_FIRST:7, MESSAGE_LAST:8,
+		MESSAGE_CREATE:10, MESSAGE_DELETE:11,
+		MESSAGE_CYCLE_RATE:20, MESSAGE_POSTS_MAX:21});
 
 function DLTextboxCmd () {
     DLBase.call(this);
@@ -289,9 +294,13 @@ function DLTextboxCmd () {
     this.command = CMD_NONE;
     this.scope = S_PARTICULAR_CONTROL;
     this.selected_message = -1;
-    this.scroll_position = -1;
+    this.scroll_param = -1;
     this.scroll_rate = -1;
-    this.scroll_effect = -1;
+    this.scroll_effect = ScrollEffect.SE_NONE;
+    this.scroll_command = ScrollCommand.SCROLL_NONE;
+    this.scroll_orientation = ScrollOrientation.SO_NONE;
+    this.message_command = MessageCommand.MESSAGE_NONE;
+    this.message_param = -1;
 }
 
 DLTextboxCmd.prototype = Object.create(DLBase.prototype);
@@ -302,14 +311,19 @@ DLTextboxCmd.prototype.BuildMessageContents = function(msg_buffer, pos) {
     pos = this.EncodeInt (this.command, msg_buffer, pos);
     pos = this.EncodeInt (this.scope, msg_buffer, pos);
     pos = this.EncodeInt (this.selected_message, msg_buffer, pos);
-    pos = this.EncodeInt (this.scroll_position, msg_buffer, pos);
+    pos = this.EncodeInt (this.scroll_param, msg_buffer, pos);
     pos = this.EncodeInt (this.scroll_rate, msg_buffer, pos);
     pos = this.EncodeInt (this.scroll_effect, msg_buffer, pos);
+    pos = this.EncodeInt (this.scroll_command, msg_buffer, pos);
+    pos = this.EncodeInt (this.scroll_orientation, msg_buffer, pos);
+    pos = this.EncodeInt (this.message_command, msg_buffer, pos);
+    pos = this.EncodeInt (this.message_param, msg_buffer, pos);
     return pos;
 }
 
 var MSG_TEXT = 150;
 var TextAction = Object.freeze ({TEXT_NOACTION:0, TEXT_APPEND:1, TEXT_REPLACE:2, TEXT_CLEAR:3});
+var TextFlag = Object.freeze ({TF_NONE:0, TF_LINEBREAK:1, TF_MSGEND:2});
 
 function DLText () {
     DLBase.call(this);
@@ -319,7 +333,9 @@ function DLText () {
     this.position = 0;
     this.text = "";
     this.message = 0;
-    this.text_action = 0;
+    this.text_action = TextAction.TEXT_NOACTION;
+    this.text_spacing = -1;
+    this.text_flag = TextFlag.TF_NONE;
     this.preferred_font = "";
 }
 
@@ -333,6 +349,8 @@ DLText.prototype.BuildMessageContents = function(msg_buffer, pos) {
     pos = this.EncodeInt (this.position, msg_buffer, pos);
     pos = this.EncodeInt (this.message, msg_buffer, pos);
     pos = this.EncodeInt (this.text_action, msg_buffer, pos);
+    pos = this.EncodeInt (this.text_flag, msg_buffer, pos);
+    pos = this.EncodeInt (this.text_spacing, msg_buffer, pos);
     pos = this.EncodeString (this.preferred_font, msg_buffer, pos);
     pos = this.EncodeString (this.text, msg_buffer, pos);
     return pos;
