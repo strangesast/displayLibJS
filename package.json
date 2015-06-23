@@ -1,7 +1,10 @@
 {
-    "name": "displayLibJS",
-    "version": "0.1.0",
-    "description": "javascript display lib for scoreboard components",
-    "main": "DisplayLib.js",
-    "author": "Jim Zagrobelny"
+  "name": "displayLibJS",
+  "version": "0.1.0",
+  "description": "javascript display lib for scoreboard components",
+  "main": "DisplayLib.js",
+  "author": "Jim Zagrobelny",
+  "devDependencies": {
+    "coffee-script": "^1.9.3"
+  }
 }
