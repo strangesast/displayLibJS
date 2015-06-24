@@ -1,19 +1,12 @@
 {
   "name": "displayLibJS",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "homepage": "https://github.com/strangesast/displayLibJS",
   "authors": [
     "Sam Zagrobelny <strangesast@gmail.com>",
     "Jim Zagrobelny <jimzag@bellsouth.net>"
   ],
-  "scripts": {
-    "install" : "coffee -c DisplayLib.coffee"
-  }
-  "main": "displayLibJS.js",
-  "moduleType": [
-    "node"
-  ],
-  "license": "MIT",
+  "main": "DisplayLib.js",
   "ignore": [
     "**/.*",
     "node_modules",
