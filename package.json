@@ -4,6 +4,9 @@
   "description": "javascript display lib for scoreboard components",
   "main": "DisplayLib.js",
   "author": "Jim Zagrobelny",
+  "scripts": {
+    "predeploy": "coffee -c DisplayLib.coffee"
+  }
   "devDependencies": {
     "coffee-script": "^1.9.3"
   }
