@@ -450,7 +450,6 @@ class DLDisplayCmd extends DLBase
 MSG_TEXTBOX_CMD = 161
 MSG_TIMER_CMD = 162
 
-
 # names here may be better off unchanged
 exports = 
   'Rect' : DLRect
@@ -466,4 +465,7 @@ exports =
   'UpdateType' : UpdateType
   'GenericScope' : GenericScope
 
-module.exports = exports
+if module?
+  module.exports = exports
+else
+  window.displayLib = exports
