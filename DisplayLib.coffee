@@ -45,44 +45,45 @@ class XYInfo
     @y_size = 0
 
 # object color definition
-DLColor = (red, green, blue, intensity) ->
-  if not red?
-    @value = -1
-  else if not intensity?
-    @value =
-      0x7f000000 + 
-      (red & 0xff) << 16 +
-      (green & 0xff) << 8 +
-      (blue & 0xff)
-  else
-    intensity = if 0 < intensity < 100 then intensity else 100
-    @value =
-      intensity << 24 +
-      (red & 0xff) << 16 +
-      (green & 0xff) << 8 +
-      (blue & 0xff)
-  @red = -> (@value >> 16) & 0xff
-  @green = -> (@value >> 8) & 0xff
-  @blue = -> @value & 0xff
-  @RGB = (red, green, blue, intensity=100) ->
+class DLColor
+  constructor: (red, green, blue, intensity) ->
+    if not red?
+      @value = -1
+    else if not intensity?
+      @value =
+        0x7f000000 + 
+        (red & 0xff) << 16 +
+        (green & 0xff) << 8 +
+        (blue & 0xff)
+    else
+      intensity = if 0 < intensity < 100 then intensity else 100
+      @value =
+        intensity << 24 +
+        (red & 0xff) << 16 +
+        (green & 0xff) << 8 +
+        (blue & 0xff)
+  @red: -> (@value >> 16) & 0xff
+  @green: -> (@value >> 8) & 0xff
+  @blue: -> @value & 0xff
+  @RGB: (red, green, blue, intensity=100) ->
     intensity = if 0 < intensity < 100 then intensity else 100
     @value =
       (intensity << 24) +
       ((red & 0xff) << 16) +
       ((green & 0xff) << 8) +
       (blue & 0xff)
-  @get_intensity = ->
+  @get_intensity: ->
     intensity = (@value & 0x7f000000) >> 24
     if 0 < intensity < 100 then intensity else 100
-  @set_intensity = (_intensity) ->
+  @set_intensity: (_intensity) ->
     intensity = unless _intensity < 0 or _intensity > 100
     then _intensity else 100
     @value = (@value & 0x00ffffff) | (intensity << 24)
-  @setEmpty = ->
+  @setEmpty: ->
     @value = -1
-  @isEmpty = ->
+  @isEmpty: ->
     @value & 0xff000000 == 0xff000000
-  @getValue = ->
+  @getValue: ->
     @value
 
 # object base definition
@@ -177,6 +178,62 @@ class DLBase
     pos++
 
     return result_buffer: msg_buffer, result_buffer: pos
+
+
+MSG_TEMPLATE = 1000
+
+class DLTemplate
+  constructor: (@name, inst = true) ->
+    if not @name?
+      throw new Error('must specify name')
+    @panels = []
+    @children = []
+    @render_id = "template-#{@next_id++}" # id of svg
+    @render_all()
+
+  # render constituents 
+  render_all: (container_id = @container_id) ->
+    @render()
+
+  render: ->
+    parent = document.getElementById(@parent_id)
+    q = parent.querySelector("##{@render_id}")
+    elem = q or document.createElement("#{@render_type}")
+    elem.setAttribute('id', @render_id)
+    elem.setAttribute('name', @name)
+    parent.appendChild(elem)
+
+  extents: ->
+    @panels.map((panel) -> 
+      loc = panel.panel_location
+      [loc.x, loc.y, loc.x_size, loc.y_size] # minx, miny, maxx, maxy
+    ).reduce((a, b) -> 
+      for x, i in a
+        console.log(x)
+      null
+    )
+
+  type: MSG_TEMPLATE
+
+  render_type: 'svg'
+
+  next_id: 0 # careful if multiple or seperate container creation
+
+  parent_id: 'template-container'
+
+  append: (_object) ->
+    if _object.type? && _object.type == MSG_PANELDEF
+      @panels.push(_object)
+      # re-calculate template extends
+      # re-render
+
+    else if _object.type? in [MSG_RECT, MSG_TEXTBOX, MSG_TEXTBOX_CMD, MSG_TEXT]
+      @children.push(_object)
+      # re-render
+
+    else
+      console.error 'Unrecognized object'
+
 
 
 MSG_RECT = 101
@@ -388,14 +445,18 @@ PanelLayout = Object.freeze
 
 # used to specify absolute position and size of 'panel'
 class DLPanelDef extends DLBase
-  @type: MSG_PANELDEF
-  @fg_color: new DLColor
-  @bg_color: new DLColor
-  @geometry: PanelGeometry.PG_NOT_SPECIFIED
-  @position: PanelPosition.PP_NOT_SPECIFIED
-  @layout: PanelLayout.PL_NORMAL
-  @panel_location: new XYInfo
-  @total_size: new XYInfo
+  constructor: (
+    @panel_location
+    @total_size
+    @control = 1
+    @fg_color = new DLColor()
+    @bg_color = new DLColor()
+    @layout = PanelLayout.PL_NORMAL
+    @position = PanelPosition.PP_NOT_SPECIFIED
+    @geometry = PanelGeometry.PG_NOT_SPECIFIED
+  ) ->
+    @type = MSG_PANELDEF
+
 
   @BuildMessageContents: (msg_buffer, pos) ->
     [
@@ -452,6 +513,7 @@ MSG_TIMER_CMD = 162
 
 # names here may be better off unchanged
 exports = 
+  'Template': DLTemplate
   'Rect' : DLRect
   'Textbox' : DLTextbox
   'Text' : DLText

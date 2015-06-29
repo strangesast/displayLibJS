@@ -1,13 +1,32 @@
 <html>
+<head>
+  <style>
+  body {
+    margin: 0px;
+  }
+  div {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  svg {
+    margin: 20px;
+    background: grey;
+    width: 600px;
+    height: 300px;
+  }
+  svg::before {
+    padding: 0px 8px;
+    font-size: 18px;
+    content: attr(name) "";
+  }
+  </style>
+</head>
+
 <body>
-  <div>
-    <p>
-    Test!
-    </p>
-  </div>
-  <script src="/DisplayLib.js">
-  </script>
-  <script src="/test.js">
-  </script>
+  <div id="template-container"></div>
+  <script src="/DisplayLib.js"></script>
+  <script src="/test.js"></script>
 </body>
 </html>
