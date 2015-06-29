@@ -3,9 +3,14 @@
   "version": "0.1.0",
   "description": "javascript display lib for scoreboard components",
   "main": "DisplayLib.js",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/strangesast/displayLibJS.git"
+  },
   "author": "Jim Zagrobelny",
   "scripts": {
-    "install": "coffee -c DisplayLib.coffee"
+    "install": "coffee -c DisplayLib.coffee",
+    "test": "coffee -c *.coffee && node test.js"
   },
   "devDependencies": {
     "coffee-script": "^1.9.3"
