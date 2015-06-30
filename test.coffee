@@ -17,5 +17,22 @@ panel_a = new dl.PanelDef(
   1 # control
 )
 
+list_a = new dl.List(
+  new dl.XYInfo(0, 0, 50, 30)
+  [
+    "toast"
+    "TOAST"
+    "goat"
+  ] #values
+  7 #display height
+  1 #row spacing,
+)
 
-template_a = new dl.Template('name1')
+list_a.render repr: document.getElementById 'container'
+#list_a.render document.getElementById 'container'
+
+#text_box = new dl.Textbox()
+
+#text_box.render()
+
+#template_a = new dl.Template('name1')

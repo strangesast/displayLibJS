@@ -1,3 +1,4 @@
+SVGNS = "http://www.w3.org/2000/svg"
 # displayLib
 MSG_NONE = 0
 
@@ -47,13 +48,12 @@ class XYInfo
 # object color definition
 class DLColor
   constructor: (red, green, blue, intensity) ->
-    if not red?
+    unless red?
       @value = -1
-    else if not intensity?
-      @value =
-        0x7f000000 + 
-        (red & 0xff) << 16 +
-        (green & 0xff) << 8 +
+    else unless intensity?
+      @value = (0x7f000000) + 
+        ((red & 0xff) << 16) +
+        ((green & 0xff) << 8) +
         (blue & 0xff)
     else
       intensity = if 0 < intensity < 100 then intensity else 100
@@ -180,73 +180,77 @@ class DLBase
     return result_buffer: msg_buffer, result_buffer: pos
 
 
-MSG_TEMPLATE = 1000
-
 class DLTemplate
-  constructor: (@name, inst = true) ->
-    if not @name?
-      throw new Error('must specify name')
-    @panels = []
+  constructor: (@name = 'undefined') ->
     @children = []
-    @render_id = "template-#{@next_id++}" # id of svg
-    @render_all()
 
-  # render constituents 
-  render_all: (container_id = @container_id) ->
-    @render()
 
-  render: ->
-    parent = document.getElementById(@parent_id)
-    q = parent.querySelector("##{@render_id}")
-    elem = q or document.createElement("#{@render_type}")
-    elem.setAttribute('id', @render_id)
-    elem.setAttribute('name', @name)
-    parent.appendChild(elem)
+class DLList
+  # pixels, pixels, pixels
+  constructor: (
+    @xy # position and max size of list
+    @list # array of list elements
+    @text_height # text height, pixels
+    @text_padding # number of pixels between lines
+    @cachec=1 # number of lines out of view "cache count"
+  ) ->
+    @offset = 0 # current offset down, pixels
+    @elements = [] # staged elements
+    @repr = null
+    @fg_color = new DLColor 43, 89, 249
+    @bg_color = new DLColor 249, 197, 166
+    @border_width = 3
 
-  extents: ->
-    @panels.map((panel) -> 
-      loc = panel.panel_location
-      [loc.x, loc.y, loc.x_size, loc.y_size] # minx, miny, maxx, maxy
-    ).reduce((a, b) -> 
-      for x, i in a
-        console.log(x)
-      null
-    )
+  render: (_parent) ->
+    unless @repr?
+      @repr = document.createElementNS(SVGNS, 'svg')
+      @repr.setAttribute 'name', 'DLTextbox'
+      rect = document.createElementNS SVGNS, 'rect'
+      rect.setAttribute 'name', 'bounds'
+      @repr.appendChild rect
+      _parent.repr.appendChild(@repr)
 
-  type: MSG_TEMPLATE
+    @repr.setAttribute 'x',      @xy.x
+    @repr.setAttribute 'y',      @xy.y
+    @repr.setAttribute 'width',  @xy.x_size
+    @repr.setAttribute 'height', @xy.y_size
+    @repr.querySelector('[name=bounds]').setAttribute 'fill', "##{@bg_color.value.toString(16).slice(0, 6)}" # too long and not right
+    @repr.querySelector('[name=bounds]').setAttribute 'stroke', "##{@fg_color.value.toString(16).slice(0, 6)}" # too long and not right
+    @repr.querySelector('[name=bounds]').setAttribute 'stroke-width', "#{@border_width/10}"
+    @repr.querySelector('[name=bounds]').setAttribute 'width', @xy.x_size
+    @repr.querySelector('[name=bounds]').setAttribute 'height', @xy.y_size
 
-  render_type: 'svg'
 
-  next_id: 0 # careful if multiple or seperate container creation
-
-  parent_id: 'template-container'
-
-  append: (_object) ->
-    if _object.type? && _object.type == MSG_PANELDEF
-      @panels.push(_object)
-      # re-calculate template extends
-      # re-render
-
-    else if _object.type? in [MSG_RECT, MSG_TEXTBOX, MSG_TEXTBOX_CMD, MSG_TEXT]
-      @children.push(_object)
-      # re-render
-
-    else
-      console.error 'Unrecognized object'
-
+    count = @xy.y_size // (@text_height + @text_padding) + @cachec
+    for i in [0...Math.min(count, @list.length)] 
+      unless @elements[i]?
+        @elements[i] = new DLTextbox()
+      xy = new XYInfo(
+        0
+        i*(@text_height+@text_padding)
+        @xy.x_size
+        @text_height
+      )
+      @elements[i].xy = xy
+      @elements[i].child ?= new DLText()
+      @elements[i].child.text = @list[i + @offset // (@text_height + @text_padding)]
+      @elements[i].render(@)
 
 
 MSG_RECT = 101
 
 # rectagle shape for styling
 class DLRect extends DLBase
-  @type: MSG_RECT
-  @xy: new XYInfo
-  @line_color: new DLColor
-  @fill_color: new DLColor
-  @line_width: 1
+  constructor: (
+    xy = new XYInfo()
+    line_color = new DLColor(43,89,249)
+    fill_color = new DLColor(249,197,166)
+    line_width = 1
+  ) ->
 
-  @BuildMessageContents: (msg_buffer, pos) ->
+  type: MSG_RECT
+
+  BuildMessageContents: (msg_buffer, pos) ->
     [
       @xy.x
       @xy.y
@@ -261,19 +265,59 @@ class DLRect extends DLBase
 
 MSG_TEXTBOX = 110;
 
+
 # textbox
 class DLTextbox extends DLBase
-  @type: MSG_TEXTBOX
-  @xy: new XYInfo
-  @fg_color: new DLColor
-  @bg_color: new DLColor
-  @border_color: new DLColor
-  @border_width: new DLColor
-  @text_xy: new XYInfo
-  @char_buffer_size: 200
-  @preferred_font: ""
+  constructor: (
+    @xy=new XYInfo()
+    @text_xy = new XYInfo()
+    @fg_color = new DLColor 120, 120, 120
+    @bg_color = new DLColor 240, 240, 240
+    @border_color = new DLColor 0, 200, 0, 80
+    @border_width = 1
+    @preferred_font = ""
+    @repr = null
+    @child = null
+  ) ->
 
-  @BuildMessageContents = (msg_buffer, pos) ->
+  type: MSG_TEXTBOX
+  char_buffer_size: 200
+
+  render: (_parent) ->
+    unless @repr?
+      @repr = document.createElementNS SVGNS, 'g'
+      @repr.setAttribute 'name', 'DLTextbox'
+      rect = document.createElementNS SVGNS, 'rect'
+      rect.setAttribute 'name', 'bounds'
+      rect.setAttribute 'fill', 'rgba(100, 100, 100, 0.5)'
+      @repr.setAttribute 'transform', "translate(#{@xy.x},#{@xy.y})"
+      @repr.appendChild(rect)
+      _parent.repr.appendChild @repr
+    #unless @child? # single child 'text'
+    #  @child = new DLText null, "undefined"
+
+    @repr.setAttribute 'x',      @xy.x
+    @repr.setAttribute 'y',      @xy.y
+    @repr.setAttribute 'width',  @xy.x_size
+    @repr.setAttribute 'height', @xy.y_size
+    @repr.querySelector('[name=bounds]').setAttribute 'fill', "##{@bg_color.value.toString(16).slice(0, 6)}" # too long and not right
+    @repr.querySelector('[name=bounds]').setAttribute 'stroke', "##{@fg_color.value.toString(16).slice(0, 6)}" # too long and not right
+    @repr.querySelector('[name=bounds]').setAttribute 'stroke-width', "#{@border_width/10}"
+    @repr.querySelector('[name=bounds]').setAttribute 'width', @xy.x_size
+    @repr.querySelector('[name=bounds]').setAttribute 'height', @xy.y_size
+
+    @child.render @
+    #console.log childr
+
+    #{x: cx, y: cy, width: cw, height: ch} = childr.getBBox()
+    #{width: cw, height: ch} = @repr.getBBox()
+    #rect = @repr.querySelector '[name=bounds]'
+    #rect.setAttribute 'width', cw
+    #rect.setAttribute 'height', ch
+
+    return @repr
+    
+  BuildMessageContents: (msg_buffer, pos) ->
     pos = [
       @xy.x
       @xy.y
@@ -386,21 +430,36 @@ TextFlag = Object.freeze
   TF_LINEBREAK: 1
   TF_MSGEND: 2
 
+FONT_SIZE = 3
 # text contained in textbox
 class DLText extends DLBase
-  @type: MSG_TEXT
-  @fg_color: new DLColor
-  @bg_color: new DLColor
-  @position: 0
-  @text: ""
-  @message: 0
-  @text_action: TextAction.TEXT_NOACTION
-  @text_spacing: -1
-  @text_flag: TextFlag.TF_NONE
-  @preferred_font: ""
+  constructor: (
+    @text = ""
+    @position = 0
+    @fg_color = new DLColor()
+    @bg_color = new DLColor()
+    @message = 0
+    @text_action = TextAction.TEXT_NOACTION
+    @text_spacing = -1
+    @text_flag = TextFlag.TF_NONE
+    @preferred_font = ""
+  ) ->
 
+  type: MSG_TEXT
 
-  @BuildMessageContents: (msg_buffer, pos) ->
+  render: (_parent) -> # svg.group
+    unless @repr?
+      @repr = document.createElementNS SVGNS, 'text'
+      @repr.setAttribute 'name', 'DLText'
+      @repr.setAttribute 'alignment-baseline', 'before-edge' #positioning relative to parent
+      @repr.setAttribute('font-family', 'Lucidia Console')
+
+    @repr.setAttribute('font-size', FONT_SIZE)
+    @repr.textContent = @text
+
+    _parent.repr.appendChild(@repr)
+
+  BuildMessageContents: (msg_buffer, pos) ->
     pos = [
       @fg_color.value
       @bg_color.value
@@ -514,6 +573,7 @@ MSG_TIMER_CMD = 162
 # names here may be better off unchanged
 exports = 
   'Template': DLTemplate
+  'List': DLList
   'Rect' : DLRect
   'Textbox' : DLTextbox
   'Text' : DLText
