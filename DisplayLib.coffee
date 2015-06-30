@@ -201,6 +201,12 @@ class DLList
     @bg_color = new DLColor 249, 197, 166
     @border_width = 3
 
+  set_offset: (offset) ->
+    # check that it does not exceed list visible length
+
+  set_offset_item: (offset_item) ->
+    # determine offset to go to item of index "offset_item"
+
   render: (_parent) ->
     unless @repr?
       @repr = document.createElementNS(SVGNS, 'svg')
@@ -222,19 +228,27 @@ class DLList
 
 
     count = @xy.y_size // (@text_height + @text_padding) + @cachec
+    through = @offset // (@text_height + @text_padding)
+    console.log(through)
     for i in [0...Math.min(count, @list.length)] 
       unless @elements[i]?
         @elements[i] = new DLTextbox()
       xy = new XYInfo(
         0
-        i*(@text_height+@text_padding)
+        i*(@text_height+@text_padding) - @offset
         @xy.x_size
         @text_height
       )
       @elements[i].xy = xy
       @elements[i].child ?= new DLText()
-      @elements[i].child.text = @list[i + @offset // (@text_height + @text_padding)]
-      @elements[i].render(@)
+      val = @list[i + through]
+      if val?
+        @elements[i].child.text = val
+        @elements[i].render(@)
+      else
+        # need to delete
+        x = @elements[i].repr
+        x.parentNode?.removeChild(x)
 
 
 MSG_RECT = 101

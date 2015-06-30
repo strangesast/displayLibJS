@@ -23,12 +23,17 @@ list_a = new dl.List(
     "toast"
     "TOAST"
     "goat"
+    "toast"
   ] #values
   7 #display height
   1 #row spacing,
 )
 
-list_a.render repr: document.getElementById 'container'
+container = repr: document.getElementById 'container'
+setInterval ->
+  list_a.render container
+  list_a.offset += 1
+, 1000
 #list_a.render document.getElementById 'container'
 
 #text_box = new dl.Textbox()
