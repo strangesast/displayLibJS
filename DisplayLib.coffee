@@ -192,9 +192,10 @@ class DLList
     @list # array of list elements
     @text_height # text height, pixels
     @text_padding # number of pixels between lines
-    @cachec=1 # number of lines out of view "cache count"
+    @cachec=2 # number of lines out of view "cache count"
   ) ->
     @offset = 0 # current offset down, pixels
+    @through = 0
     @elements = [] # staged elements
     @repr = null
     @fg_color = new DLColor 43, 89, 249
@@ -203,6 +204,11 @@ class DLList
 
   set_offset: (offset) ->
     # check that it does not exceed list visible length
+    if @list.length*(@text_height+@text_padding) - offset - @text_padding > @xy.y_size and offset > 0
+      @offset = offset
+      true
+    else
+      false
 
   set_offset_item: (offset_item) ->
     # determine offset to go to item of index "offset_item"
@@ -220,28 +226,28 @@ class DLList
     @repr.setAttribute 'y',      @xy.y
     @repr.setAttribute 'width',  @xy.x_size
     @repr.setAttribute 'height', @xy.y_size
-    @repr.querySelector('[name=bounds]').setAttribute 'fill', "##{@bg_color.value.toString(16).slice(0, 6)}" # too long and not right
-    @repr.querySelector('[name=bounds]').setAttribute 'stroke', "##{@fg_color.value.toString(16).slice(0, 6)}" # too long and not right
+    @repr.querySelector('[name=bounds]').setAttribute 'fill', "##{@bg_color.value.toString(16).slice(2, 8)}" # too long and not right
+    @repr.querySelector('[name=bounds]').setAttribute 'stroke', "##{@fg_color.value.toString(16).slice(2, 8)}" # too long and not right
     @repr.querySelector('[name=bounds]').setAttribute 'stroke-width', "#{@border_width/10}"
     @repr.querySelector('[name=bounds]').setAttribute 'width', @xy.x_size
     @repr.querySelector('[name=bounds]').setAttribute 'height', @xy.y_size
 
 
     count = @xy.y_size // (@text_height + @text_padding) + @cachec
-    through = @offset // (@text_height + @text_padding)
-    console.log(through)
+    @through = @offset // (@text_height + @text_padding)
+    console.log("through: #{@through}")
     for i in [0...Math.min(count, @list.length)] 
       unless @elements[i]?
         @elements[i] = new DLTextbox()
       xy = new XYInfo(
         0
-        i*(@text_height+@text_padding) - @offset
+        i*(@text_height+@text_padding) - @offset % (@text_height+@text_padding)
         @xy.x_size
         @text_height
       )
       @elements[i].xy = xy
       @elements[i].child ?= new DLText()
-      val = @list[i + through]
+      val = @list[i + @through]
       if val?
         @elements[i].child.text = val
         @elements[i].render(@)
@@ -310,24 +316,16 @@ class DLTextbox extends DLBase
     #unless @child? # single child 'text'
     #  @child = new DLText null, "undefined"
 
-    @repr.setAttribute 'x',      @xy.x
-    @repr.setAttribute 'y',      @xy.y
+    @repr.setAttribute 'transform', "translate(#{@xy.x},#{@xy.y})"
     @repr.setAttribute 'width',  @xy.x_size
     @repr.setAttribute 'height', @xy.y_size
-    @repr.querySelector('[name=bounds]').setAttribute 'fill', "##{@bg_color.value.toString(16).slice(0, 6)}" # too long and not right
-    @repr.querySelector('[name=bounds]').setAttribute 'stroke', "##{@fg_color.value.toString(16).slice(0, 6)}" # too long and not right
+    @repr.querySelector('[name=bounds]').setAttribute 'fill', "##{@bg_color.value.toString(16).slice(2, 8)}" # too long and not right
+    @repr.querySelector('[name=bounds]').setAttribute 'stroke', "##{@fg_color.value.toString(16).slice(2, 8)}" # too long and not right
     @repr.querySelector('[name=bounds]').setAttribute 'stroke-width', "#{@border_width/10}"
     @repr.querySelector('[name=bounds]').setAttribute 'width', @xy.x_size
     @repr.querySelector('[name=bounds]').setAttribute 'height', @xy.y_size
 
     @child.render @
-    #console.log childr
-
-    #{x: cx, y: cy, width: cw, height: ch} = childr.getBBox()
-    #{width: cw, height: ch} = @repr.getBBox()
-    #rect = @repr.querySelector '[name=bounds]'
-    #rect.setAttribute 'width', cw
-    #rect.setAttribute 'height', ch
 
     return @repr
     
