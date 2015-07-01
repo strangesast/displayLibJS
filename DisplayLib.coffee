@@ -36,6 +36,62 @@ GenericScope = Object.freeze(
   GS_APPLIES_TO_ALL: -2
 )
 
+# what class defines these keys
+# TODO: do this better, include all 'types'
+convert = 
+  template: 'Template'
+  fg_color: 'DLColor'
+  bg_color: 'DLColor'
+  xy: 'XYInfo'
+  list: 'List'
+  '151': 'PanelDef'
+  xy: 'XYInfo'
+  color: 'Color'
+
+deserialize = (object_prop) ->
+  # everything should boil down to these
+  if typeof object_prop in ['number', 'string', 'boolean', 'null']
+    return object_prop
+
+  else if object_prop instanceof Array
+    arr = []
+    for prop in object_prop
+      #console.log('prop1') if prop is undefined
+      val = deserialize(prop)
+      #console.log(val) if val == undefined
+      elem = val 
+      arr.push(elem)
+    return arr
+
+  else if typeof object_prop == "object"
+    # must have type
+    type = object_prop.type
+    unless type?
+      # TODO: prop could be object
+      throw new Error('missing type')
+
+    # type must be listed in convert
+    object_name = convert[type]
+    unless object_name?
+      throw new Error "object with type #{type} not in convert"
+
+    # object as defined in DisplayLib
+    object = new dl[object_name]()
+    
+    # non-static (dynamic?) class properties i.e. the ones that are interesting
+    object_keys = Object.keys(object)
+    for key in object_keys
+      if object_prop[key]?
+        val = deserialize(object_prop[key])
+        #console.log(val) if val == undefined
+        object[key] = val
+    return object # yes, this is necessary (~2 hours later)
+
+  else
+    # probably undefined eh?
+    throw new Error "type not recognized for #{object_prop}"
+
+
 # positional information, used by most DLBase derivatives
 class XYInfo
   constructor: (@x=0, @y=0, @x_size=0, @y_size=0) ->
@@ -91,8 +147,27 @@ class DLColor
     @value = value
 
 
+class DLSuperBass
+  serialize: (_obj) ->
+    # cool little recursion, probably dangerous
+    if _obj.toObject?
+      _obj.toObject() # should probably return object
+      _obj
+    else if typeof _obj in ["string", "number"]
+      _obj
+    else if _obj instanceof Array
+      @serialize(each) for each in _obj
+    else if typeof _obj == "object"
+      temp = {}
+      for key of _obj
+        temp[key] = @serialize(_obj[key])
+      temp
+
+  deserialize: deserialize
+
+
 # object base definition
-class DLBase
+class DLBase extends DLSuperBass
   @type: MSG_NONE
   @category: ObjectCategory.OC_UNSPECIFIED
   @layer: 0
@@ -184,40 +259,9 @@ class DLBase
 
     return result_buffer: msg_buffer, result_buffer: pos
 
-  serialize: (_obj) ->
-    # cool little recursion, probably dangerous
-    if _obj.toObject?
-      _obj.toObject() # should probably return object
-      _obj
-    else if typeof _obj in ["string", "number"]
-      _obj
-    else if _obj instanceof Array
-      @serialize(each) for each in _obj
-    else if typeof _obj == "object"
-      temp = {}
-      for key of _obj
-        temp[key] = @serialize(_obj[key])
-      temp
-
-
-class DLVirtualBase
-  serialize: (_obj) ->
-    # cool little recursion, probably dangerous
-    if _obj.toObject?
-      _obj.toObject() # should probably return object
-    else if typeof _obj in ["string", "number"]
-      _obj
-    else if _obj instanceof Array
-      @serialize(each) for each in _obj
-    else if typeof _obj == "object"
-      temp = {}
-      for key of _obj
-        temp[key] = @serialize(_obj[key])
-      temp
-
 
 PIXEL_DENSITY = 10
-class DLTemplate extends DLVirtualBase
+class DLTemplate extends DLSuperBass
   constructor: (
     @xy
     @name = 'undefined'
@@ -752,6 +796,7 @@ exports =
   'DisplayRequest' : DisplayRequest
   'UpdateType' : UpdateType
   'GenericScope' : GenericScope
+  'deserialize' : deserialize
 
 if module?
   module.exports = exports
