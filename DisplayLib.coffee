@@ -39,7 +39,8 @@ GenericScope = Object.freeze(
 # positional information, used by most DLBase derivatives
 class XYInfo
   constructor: (@x=0, @y=0, @x_size=0, @y_size=0) ->
-  @Clear = ->
+  type: 'xy'
+  Clear: ->
     @x = 0
     @y = 0
     @x_size = 0
@@ -62,6 +63,7 @@ class DLColor
         (red & 0xff) << 16 +
         (green & 0xff) << 8 +
         (blue & 0xff)
+  type: 'color'
   @red: -> (@value >> 16) & 0xff
   @green: -> (@value >> 8) & 0xff
   @blue: -> @value & 0xff
@@ -76,7 +78,7 @@ class DLColor
     intensity = (@value & 0x7f000000) >> 24
     if 0 < intensity < 100 then intensity else 100
   @set_intensity: (_intensity) ->
-    intensity = unless _intensity < 0 or _intensity > 100
+    intensity = if 0 < _intensity < 100
     then _intensity else 100
     @value = (@value & 0x00ffffff) | (intensity << 24)
   @setEmpty: ->
@@ -85,6 +87,9 @@ class DLColor
     @value & 0xff000000 == 0xff000000
   @getValue: ->
     @value
+  @setValue: (value) ->
+    @value = value
+
 
 # object base definition
 class DLBase
@@ -179,13 +184,98 @@ class DLBase
 
     return result_buffer: msg_buffer, result_buffer: pos
 
+  serialize: (_obj) ->
+    # cool little recursion, probably dangerous
+    if _obj.toObject?
+      _obj.toObject() # should probably return object
+      _obj
+    else if typeof _obj in ["string", "number"]
+      _obj
+    else if _obj instanceof Array
+      @serialize(each) for each in _obj
+    else if typeof _obj == "object"
+      temp = {}
+      for key of _obj
+        temp[key] = @serialize(_obj[key])
+      temp
 
-class DLTemplate
-  constructor: (@name = 'undefined') ->
+
+class DLVirtualBase
+  serialize: (_obj) ->
+    # cool little recursion, probably dangerous
+    if _obj.toObject?
+      _obj.toObject() # should probably return object
+    else if typeof _obj in ["string", "number"]
+      _obj
+    else if _obj instanceof Array
+      @serialize(each) for each in _obj
+    else if typeof _obj == "object"
+      temp = {}
+      for key of _obj
+        temp[key] = @serialize(_obj[key])
+      temp
+
+
+PIXEL_DENSITY = 10
+class DLTemplate extends DLVirtualBase
+  constructor: (
+    @xy
+    @name = 'undefined'
     @children = []
+    @panels = []
+    @fg_color = new DLColor 25, 39, 19
+    @bg_color = new DLColor 120, 170, 103
+    @border_width = 4
+  ) ->
+    @repr = null
+    @parent = null #unlike others, this is dom element
+
+  type: 'template'
+
+  render: (@parent, vis=true) ->
+    if vis
+      unless @repr?
+        @repr = document.createElementNS(SVGNS, 'svg')
+        @repr.setAttribute 'name', 'DLTemplate'
+        rect = document.createElementNS SVGNS, 'rect'
+        rect.setAttribute 'name', 'bounds'
+        @repr.appendChild rect
+        @parent.appendChild(@repr)
+
+      @repr.setAttribute 'x',      @xy.x
+      @repr.setAttribute 'y',      @xy.y
+      @repr.setAttribute 'width',  @xy.x_size*PIXEL_DENSITY
+      @repr.setAttribute 'height', @xy.y_size*PIXEL_DENSITY
+      @repr.setAttribute 'viewBox', "0 0 #{@xy.x_size} #{@xy.y_size}"
+      @repr.querySelector('[name=bounds]').setAttribute 'fill', "##{@bg_color.value.toString(16).slice(2, 8)}" # too long and not right
+      @repr.querySelector('[name=bounds]').setAttribute 'stroke', "##{@fg_color.value.toString(16).slice(2, 8)}" # too long and not right
+      @repr.querySelector('[name=bounds]').setAttribute 'stroke-width', "#{@border_width/10}"
+      @repr.querySelector('[name=bounds]').setAttribute 'width', @xy.x_size
+      @repr.querySelector('[name=bounds]').setAttribute 'height', @xy.y_size
+
+    for panel in @panels
+      panel.render @, vis
+
+    for child in @children
+      child.render @, vis
+
+  toObject: ->
+    obj = {}
+    for each in [
+      'xy'
+      'name'
+      'children'
+      'panels'
+      'fg_color'
+      'bg_color'
+      'border_width'
+      'type'
+    ]
+      obj[each] = @serialize(@[each])
+    obj
 
 
-class DLList
+class DLList extends DLVirtualBase
   # pixels, pixels, pixels
   constructor: (
     @xy # position and max size of list
@@ -193,14 +283,16 @@ class DLList
     @text_height # text height, pixels
     @text_padding # number of pixels between lines
     @cachec=2 # number of lines out of view "cache count"
-  ) ->
     @offset = 0 # current offset down, pixels
-    @through = 0
-    @elements = [] # staged elements
-    @repr = null
     @fg_color = new DLColor 43, 89, 249
     @bg_color = new DLColor 249, 197, 166
     @border_width = 3
+  ) ->
+    @through = 0
+    @elements = [] # staged elements
+    @repr = null
+
+  type: "list"
 
   set_offset: (offset) ->
     # check that it does not exceed list visible length
@@ -213,29 +305,29 @@ class DLList
   set_offset_item: (offset_item) ->
     # determine offset to go to item of index "offset_item"
 
-  render: (_parent) ->
-    unless @repr?
-      @repr = document.createElementNS(SVGNS, 'svg')
-      @repr.setAttribute 'name', 'DLTextbox'
-      rect = document.createElementNS SVGNS, 'rect'
-      rect.setAttribute 'name', 'bounds'
-      @repr.appendChild rect
-      _parent.repr.appendChild(@repr)
+  render: (_parent, vis=true) ->
+    if vis
+      unless @repr?
+        @repr = document.createElementNS(SVGNS, 'svg')
+        @repr.setAttribute 'name', 'DLList'
+        rect = document.createElementNS SVGNS, 'rect'
+        rect.setAttribute 'name', 'bounds'
+        @repr.appendChild rect
+        _parent.repr.appendChild(@repr)
 
-    @repr.setAttribute 'x',      @xy.x
-    @repr.setAttribute 'y',      @xy.y
-    @repr.setAttribute 'width',  @xy.x_size
-    @repr.setAttribute 'height', @xy.y_size
-    @repr.querySelector('[name=bounds]').setAttribute 'fill', "##{@bg_color.value.toString(16).slice(2, 8)}" # too long and not right
-    @repr.querySelector('[name=bounds]').setAttribute 'stroke', "##{@fg_color.value.toString(16).slice(2, 8)}" # too long and not right
-    @repr.querySelector('[name=bounds]').setAttribute 'stroke-width', "#{@border_width/10}"
-    @repr.querySelector('[name=bounds]').setAttribute 'width', @xy.x_size
-    @repr.querySelector('[name=bounds]').setAttribute 'height', @xy.y_size
+      @repr.setAttribute 'x',      @xy.x
+      @repr.setAttribute 'y',      @xy.y
+      @repr.setAttribute 'width',  @xy.x_size
+      @repr.setAttribute 'height', @xy.y_size
+      @repr.querySelector('[name=bounds]').setAttribute 'fill', "##{@bg_color.value.toString(16).slice(2, 8)}" # too long and not right
+      @repr.querySelector('[name=bounds]').setAttribute 'stroke', "##{@fg_color.value.toString(16).slice(2, 8)}" # too long and not right
+      @repr.querySelector('[name=bounds]').setAttribute 'stroke-width', "#{@border_width/10}"
+      @repr.querySelector('[name=bounds]').setAttribute 'width', @xy.x_size
+      @repr.querySelector('[name=bounds]').setAttribute 'height', @xy.y_size
 
 
     count = @xy.y_size // (@text_height + @text_padding) + @cachec
     @through = @offset // (@text_height + @text_padding)
-    console.log("through: #{@through}")
     for i in [0...Math.min(count, @list.length)] 
       unless @elements[i]?
         @elements[i] = new DLTextbox()
@@ -250,11 +342,35 @@ class DLList
       val = @list[i + @through]
       if val?
         @elements[i].child.text = val
-        @elements[i].render(@)
+        if vis
+          @elements[i].render @, vis
       else
-        # need to delete
-        x = @elements[i].repr
-        x.parentNode?.removeChild(x)
+        # very ugly
+        console.log i
+        if vis
+          x = @elements[i].repr
+          x?.parentNode?.removeChild(x)
+        @elements.splice(i, 1)
+    null
+
+  toObject: ->
+    obj = {}
+    for each in [
+      'xy'
+      'list'
+      'text_height'
+      'text_padding'
+      'cachec'
+      'offset'
+      'fg_color'
+      'bg_color'
+      'border_width'
+      'type'
+    ]
+      obj[each] = @serialize(@[each])
+    obj
+
+
 
 
 MSG_RECT = 101
@@ -303,29 +419,30 @@ class DLTextbox extends DLBase
   type: MSG_TEXTBOX
   char_buffer_size: 200
 
-  render: (_parent) ->
-    unless @repr?
-      @repr = document.createElementNS SVGNS, 'g'
-      @repr.setAttribute 'name', 'DLTextbox'
-      rect = document.createElementNS SVGNS, 'rect'
-      rect.setAttribute 'name', 'bounds'
-      rect.setAttribute 'fill', 'rgba(100, 100, 100, 0.5)'
+  render: (_parent, vis=true) ->
+    if vis
+      unless @repr?
+        @repr = document.createElementNS SVGNS, 'g'
+        @repr.setAttribute 'name', 'DLTextbox'
+        rect = document.createElementNS SVGNS, 'rect'
+        rect.setAttribute 'name', 'bounds'
+        rect.setAttribute 'fill', 'rgba(100, 100, 100, 0.5)'
+        @repr.setAttribute 'transform', "translate(#{@xy.x},#{@xy.y})"
+        @repr.appendChild(rect)
+        _parent.repr.appendChild @repr
+      #unless @child? # single child 'text'
+      #  @child = new DLText null, "undefined"
+
       @repr.setAttribute 'transform', "translate(#{@xy.x},#{@xy.y})"
-      @repr.appendChild(rect)
-      _parent.repr.appendChild @repr
-    #unless @child? # single child 'text'
-    #  @child = new DLText null, "undefined"
+      @repr.setAttribute 'width',  @xy.x_size
+      @repr.setAttribute 'height', @xy.y_size
+      @repr.querySelector('[name=bounds]').setAttribute 'fill', "##{@bg_color.value.toString(16).slice(2, 8)}" # too long and not right
+      @repr.querySelector('[name=bounds]').setAttribute 'stroke', "##{@fg_color.value.toString(16).slice(2, 8)}" # too long and not right
+      @repr.querySelector('[name=bounds]').setAttribute 'stroke-width', "#{@border_width/10}"
+      @repr.querySelector('[name=bounds]').setAttribute 'width', @xy.x_size
+      @repr.querySelector('[name=bounds]').setAttribute 'height', @xy.y_size
 
-    @repr.setAttribute 'transform', "translate(#{@xy.x},#{@xy.y})"
-    @repr.setAttribute 'width',  @xy.x_size
-    @repr.setAttribute 'height', @xy.y_size
-    @repr.querySelector('[name=bounds]').setAttribute 'fill', "##{@bg_color.value.toString(16).slice(2, 8)}" # too long and not right
-    @repr.querySelector('[name=bounds]').setAttribute 'stroke', "##{@fg_color.value.toString(16).slice(2, 8)}" # too long and not right
-    @repr.querySelector('[name=bounds]').setAttribute 'stroke-width', "#{@border_width/10}"
-    @repr.querySelector('[name=bounds]').setAttribute 'width', @xy.x_size
-    @repr.querySelector('[name=bounds]').setAttribute 'height', @xy.y_size
-
-    @child.render @
+    @child.render @, vis
 
     return @repr
     
@@ -459,17 +576,18 @@ class DLText extends DLBase
 
   type: MSG_TEXT
 
-  render: (_parent) -> # svg.group
-    unless @repr?
-      @repr = document.createElementNS SVGNS, 'text'
-      @repr.setAttribute 'name', 'DLText'
-      @repr.setAttribute 'alignment-baseline', 'before-edge' #positioning relative to parent
-      @repr.setAttribute('font-family', 'Lucidia Console')
+  render: (_parent, vis=true) -> # svg.group
+    if vis
+      unless @repr?
+        @repr = document.createElementNS SVGNS, 'text'
+        @repr.setAttribute 'name', 'DLText'
+        @repr.setAttribute 'alignment-baseline', 'before-edge' #positioning relative to parent
+        @repr.setAttribute('font-family', 'Lucidia Console')
 
-    @repr.setAttribute('font-size', FONT_SIZE)
-    @repr.textContent = @text
+      @repr.setAttribute('font-size', FONT_SIZE)
+      @repr.textContent = @text
 
-    _parent.repr.appendChild(@repr)
+      _parent.repr.appendChild(@repr)
 
   BuildMessageContents: (msg_buffer, pos) ->
     pos = [
@@ -519,17 +637,37 @@ class DLPanelDef extends DLBase
   constructor: (
     @panel_location
     @total_size
-    @control = 1
-    @fg_color = new DLColor()
-    @bg_color = new DLColor()
-    @layout = PanelLayout.PL_NORMAL
     @position = PanelPosition.PP_NOT_SPECIFIED
+    @layout = PanelLayout.PL_NORMAL
+    @control = 1
+    @fg_color = new DLColor 209, 200, 230
+    @bg_color = new DLColor 213, 240, 210
     @geometry = PanelGeometry.PG_NOT_SPECIFIED
   ) ->
-    @type = MSG_PANELDEF
+
+  type: MSG_PANELDEF
+
+  render: (_parent, vis=true) -> # parent (DLTemplate)
+    if vis
+      unless @repr?
+        @repr = document.createElementNS(SVGNS, 'g')
+        @repr.setAttribute 'name', 'DLPanelDef'
+        rect = document.createElementNS SVGNS, 'rect'
+        rect.setAttribute 'name', 'bounds'
+        @repr.appendChild rect
+        _parent.repr.appendChild(@repr)
+
+      @repr.setAttribute 'transform', "translate(#{@panel_location.x},#{@panel_location.y})"
+      @repr.setAttribute 'width',  @panel_location.x_size
+      @repr.setAttribute 'height', @panel_location.y_size
+      @repr.querySelector('[name=bounds]').setAttribute 'fill', "##{@bg_color.value.toString(16).slice(2, 8)}" # too long and not right
+      @repr.querySelector('[name=bounds]').setAttribute 'stroke', "##{@fg_color.value.toString(16).slice(2, 8)}" # too long and not right
+      @repr.querySelector('[name=bounds]').setAttribute 'stroke-width', "#{@border_width/10}"
+      @repr.querySelector('[name=bounds]').setAttribute 'width', @panel_location.x_size
+      @repr.querySelector('[name=bounds]').setAttribute 'height', @panel_location.y_size
 
 
-  @BuildMessageContents: (msg_buffer, pos) ->
+  BuildMessageContents: (msg_buffer, pos) ->
     [
       @fg_color.value
       @bg_color.value
@@ -547,6 +685,22 @@ class DLPanelDef extends DLBase
     ].reduce (prev, curr, i) ->
       @EncodeInt curr, msg_buffer, prev
     , pos
+
+  toObject: ->
+    obj = {}
+    for each in [
+      'panel_location'
+      'total_size'
+      'position'
+      'layout'
+      'control'
+      'fg_color'
+      'bg_color'
+      'geometry'
+      'type'
+    ]
+      obj[each] = @serialize(@[each])
+    obj
 
 MSG_GENERIC_CMD = 160
 

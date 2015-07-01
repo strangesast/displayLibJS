@@ -13,6 +13,7 @@
     "test": "coffee -c *.coffee && node test-server.js"
   },
   "devDependencies": {
+    "body-parser": "^1.13.1",
     "coffee-script": "^1.9.3",
     "express": "^4.13.0"
   }

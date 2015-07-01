@@ -1,12 +1,83 @@
 express = require 'express'
+bodyParser = require 'body-parser'
+dl = require './DisplayLib.js'
+
 app = express()
 
+app.use bodyParser.json()
+app.use bodyParser.urlencoded extended: true
+
 port = 3000
+
+# what class defines these keys
+convert = 
+  template: 'Template'
+  fg_color: 'DLColor'
+  bg_color: 'DLColor'
+  xy: 'XYInfo'
+  list: 'List'
+  '151': 'PanelDef'
+  xy: 'XYInfo'
+  color: 'Color'
+
+# TODO: this should exist as inherited static method in class definition
+deserialize = (object_prop) ->
+  # everything should boil down to these
+  if typeof object_prop in ['number', 'string', 'boolean', 'null']
+    return object_prop
+
+  else if object_prop instanceof Array
+    arr = []
+    for prop in object_prop
+      #console.log('prop1') if prop is undefined
+      val = deserialize(prop)
+      #console.log(val) if val == undefined
+      elem = val 
+      arr.push(elem)
+    return arr
+
+  else if typeof object_prop == "object"
+    # must have type
+    type = object_prop.type
+    unless type?
+      # TODO: prop could be object
+      throw new Error('missing type')
+
+    # type must be listed in convert
+    object_name = convert[type]
+    unless object_name?
+      throw new Error "object with type #{type} not in convert"
+
+    # object as defined in DisplayLib
+    object = new dl[object_name]()
+    
+    # non-static (dynamic?) class properties i.e. the ones that are interesting
+    object_keys = Object.keys(object)
+    for key in object_keys
+      if object_prop[key]?
+        val = deserialize(object_prop[key])
+        #console.log(val) if val == undefined
+        object[key] = val
+    return object # yes, this is necessary (~2 hours later)
+
+  else
+    # probably undefined eh?
+    throw new Error "type not recognized for #{object_prop}"
+
+
 
 app.use express.static "#{__dirname}/"
 
 app.get '/', (req, res) ->
   res.sendFile 'list.html', root: __dirname 
+
+app.post '/', (req, res) ->
+  object_props = req.body
+
+  obj = deserialize(object_props)
+  obj.render(null, false)
+
+  res.json(obj)
 
 app.listen port, ->
   console.log "starting list test at localhost:#{port}"

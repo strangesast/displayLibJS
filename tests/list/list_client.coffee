@@ -1,5 +1,20 @@
 dl = window.displayLib
 
+makeRequest = (data, location = '/', method = 'POST') ->
+  data = JSON.stringify(data)
+  new Promise (resolve, reject) ->
+    _request = new XMLHttpRequest()
+    _request.open(method, location, true)
+    _request.onload = ->
+      if _request.status == 200
+        resolve(_request.response)
+      else
+        reject(_request.statusText)
+    _request.onerror = ->
+      reject(_request)
+    _request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8')
+    _request.send(data)
+
 list_a = new dl.List(
   new dl.XYInfo(0, 0, 50, 30)
   [
@@ -14,9 +29,41 @@ list_a = new dl.List(
   1 #row spacing,
 )
 
-container = repr: document.getElementById 'container'
-list_a.render container
+template = new dl.Template(
+  new dl.XYInfo(0, 0, 120, 32)
+  "first"
+)
 
+
+panel_one = new dl.PanelDef(
+  new dl.XYInfo(0, 0, 60, 32) # panel_location
+  new dl.XYInfo(0, 0, 120, 32) # total_size
+  1 # position
+  1 # layout
+  1 # control
+)
+
+panel_two = new dl.PanelDef(
+  new dl.XYInfo(60, 0, 60, 32)
+  new dl.XYInfo(0, 0, 120, 32)
+  2
+  0
+  2
+)
+
+template.children = [list_a]
+template.panels = [panel_one, panel_two]
+console.log(template)
+
+
+container = document.getElementById('template-container')
+template.render(container)
+template_obj = template.toObject()
+
+makeRequest(template_obj).then (result) ->
+  console.log(JSON.parse(result))
+
+"""
 current = null
 
 trigger = (val) ->
@@ -67,3 +114,4 @@ for but in buttons
 buttons = document.querySelectorAll('.size')
 for but in buttons
   but.addEventListener 'click', change
+"""
