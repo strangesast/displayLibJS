@@ -319,7 +319,7 @@ class DLTemplate extends DLSuperBass
     obj
 
 
-class DLList extends DLVirtualBase
+class DLList extends DLSuperBass
   # pixels, pixels, pixels
   constructor: (
     @xy # position and max size of list
