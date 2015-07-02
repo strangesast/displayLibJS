@@ -14,7 +14,7 @@ port = 3000
 app.use express.static "#{__dirname}/"
 
 app.get '/', (req, res) ->
-  res.sendFile 'list.html', root: __dirname 
+  res.sendFile 'index.html', root: __dirname 
 
 app.post '/', (req, res) ->
   object_props = req.body
