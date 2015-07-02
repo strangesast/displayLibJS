@@ -1,6 +1,8 @@
 express = require 'express'
 bodyParser = require 'body-parser'
 dl = require './DisplayLib.js'
+display = require '../../displayaddon'
+Promise = require('es6-promise').Promise
 
 app = express()
 
@@ -17,10 +19,12 @@ app.get '/', (req, res) ->
   res.sendFile 'index.html', root: __dirname 
 
 app.post '/', (req, res) ->
+  # decode json object
   object_props = req.body
 
+  # convert base object to class
   obj = dl.deserialize(object_props)
-  console.log(obj)
+  obj.Build()
 
   res.json(obj)
 

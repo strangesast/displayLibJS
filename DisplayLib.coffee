@@ -159,19 +159,19 @@ class DLSuperBass
 
 # object base definition
 class DLBase extends DLSuperBass
-  @type: MSG_NONE
-  @category: ObjectCategory.OC_UNSPECIFIED
-  @layer: 0
-  @panel: 0 
-  @control: 0
-  @parent_control: 0
-  @is_final: 0
-  @display_attribute: DisplayAttribute.DA_NONE
-  @color: DLColor 0
+  @type = MSG_NONE
+  @category = ObjectCategory.OC_UNSPECIFIED
+  @layer = 0
+  @panel = 0 
+  @control = 0
+  @parent_control = 0
+  @is_final = 0
+  @display_attribute = DisplayAttribute.DA_NONE
+  @color = DLColor 0
 
-  @EncodeInt: (value, encoded_buffer, pos) ->
+  EncodeInt: (value, encoded_buffer, pos) ->
     if value < 0
-      value*=-1
+      value = -value
       encoded_buffer[pos] = ProtocolCode.START_NUMBER_NEG
     else
       encoded_buffer[pos] = ProtocolCode.START_NUMBER_POS
@@ -182,9 +182,10 @@ class DLBase extends DLSuperBass
       pos++
       value = value >> 4
     encoded_buffer[pos] = ProtocolCode.END_ELEMENT
-    return pos++
+    pos++
+    return pos
   
-  @EncodeString: (string_value, encoded_buffer, pos) ->
+  EncodeString: (string_value, encoded_buffer, pos) ->
     encoded_buffer[pos] = ProtocolCode.START_TEXT
     pos++
     for char, i in string_value
@@ -195,7 +196,7 @@ class DLBase extends DLSuperBass
     encoded_buffer[pos] = ProtocolCode.END_ELEMENT
     return pos++
 
-  @DecodeInt: (encoded_buffer, pos) ->
+  DecodeInt: (encoded_buffer, pos) ->
     is_negative = false
     if encoded_buffer[pos] == ProtocolCode.START_NUMBER_POS
     else if encoded_buffer[pos] == ProtocolCode.START_NUMBER_NEG
@@ -204,7 +205,7 @@ class DLBase extends DLSuperBass
       result_int: 0
       result_pos: 0
 
-  @DecodeString: (encoded_buffer, pos) ->
+  DecodeString: (encoded_buffer, pos) ->
     if encoded_buffer[pos] !=  ProtocolCode.START_TEXT
       return 0
     while true
@@ -216,10 +217,10 @@ class DLBase extends DLSuperBass
       return_string = return_string + encoded_buffer[pos]
     return result_str: return_string, result_pos: pos
 
-  @BuildMessageContents: (buffer, pos) -> 
+  BuildMessageContents: (buffer, pos) -> 
     pos
 
-  @BuildMessage: ->
+  BuildMessage: ->
     msg_buffer = new Buffer 2000
     pos = 0
 
@@ -229,19 +230,16 @@ class DLBase extends DLSuperBass
     pos++
     pos = @EncodeInt @type, msg_buffer, pos
 
-    # EncodeInt
-    common_values = [
+    encodeint = @EncodeInt # wtf
+    pos = [
       @layer
       @panel
       @control
       @parent_control
       @is_final
       @display_attribute
-    ]
-
-    # TODO: what is happening here?
-    pos = common_values.reduce (prev, curr, i) ->
-      @EncodeInt curr, msg_buffer, prev
+    ].reduce (prev, curr, i) ->
+      encodeint curr, msg_buffer, prev
     , pos
 
     pos = @BuildMessageContents msg_buffer, pos
@@ -308,6 +306,19 @@ class DLTemplate extends DLSuperBass
     ]
       obj[each] = @serialize(@[each])
     obj
+
+  Build: ->
+    # should replicate what it's children do
+    @panels.map (panel) ->
+      console.log panel.BuildMessage()
+    #.map (result) ->
+    #  #Promise.resolve result.result_buffer.slice(0, result.result_bytes) #excessive, but returns promise
+    #.map (prom) ->
+    #  prom.then (buf) ->
+    #    console.log(buf)
+
+
+
 
 
 class DLList extends DLSuperBass
@@ -402,7 +413,7 @@ class DLList extends DLSuperBass
       'type'
     ]
       obj[each] = @serialize(@[each])
-    obj
+    return obj
 
 
 
@@ -702,7 +713,10 @@ class DLPanelDef extends DLBase
 
 
   BuildMessageContents: (msg_buffer, pos) ->
-    [
+    orig = pos
+    encodeint = @EncodeInt
+    
+    pos = [
       @fg_color.value
       @bg_color.value
       @geometry
@@ -717,8 +731,10 @@ class DLPanelDef extends DLBase
       @total_size.x_size
       @total_size.y_size
     ].reduce (prev, curr, i) ->
-      @EncodeInt curr, msg_buffer, prev
-    , pos
+      encodeint curr, msg_buffer, prev
+    , orig
+
+    return pos
 
   toObject: ->
     obj = {}

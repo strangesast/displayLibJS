@@ -35,6 +35,7 @@ template = new dl.Template(
 )
 
 
+
 panel_one = new dl.PanelDef(
   new dl.XYInfo(0, 0, 60, 32) # panel_location
   new dl.XYInfo(0, 0, 120, 32) # total_size
@@ -42,6 +43,8 @@ panel_one = new dl.PanelDef(
   1 # layout
   1 # control
 )
+
+console.log(panel_one.__proto__.__proto__)
 
 panel_two = new dl.PanelDef(
   new dl.XYInfo(60, 0, 60, 32)
