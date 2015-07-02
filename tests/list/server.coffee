@@ -20,6 +20,7 @@ app.post '/', (req, res) ->
   object_props = req.body
 
   obj = dl.deserialize(object_props)
+  console.log(obj)
 
   res.json(obj)
 

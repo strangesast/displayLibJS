@@ -54,21 +54,14 @@ deserialize = (object_prop) ->
     return object_prop
 
   else if object_prop instanceof Array
-    arr = []
-    for prop in object_prop
-      #console.log('prop1') if prop is undefined
-      val = deserialize(prop)
-      #console.log(val) if val == undefined
-      elem = val 
-      arr.push(elem)
-    return arr
+    deserialize(prop) for prop in object_prop
 
   else if typeof object_prop == "object"
     # must have type
     type = object_prop.type
     unless type?
       # TODO: prop could be object
-      throw new Error('missing type')
+      throw new Error("object, (#{object_prop}) missing type")
 
     # type must be listed in convert
     object_name = convert[type]
@@ -76,14 +69,13 @@ deserialize = (object_prop) ->
       throw new Error "object with type #{type} not in convert"
 
     # object as defined in DisplayLib
-    object = new dl[object_name]()
+    object = new exports[object_name]()
     
     # non-static (dynamic?) class properties i.e. the ones that are interesting
     object_keys = Object.keys(object)
     for key in object_keys
       if object_prop[key]?
         val = deserialize(object_prop[key])
-        #console.log(val) if val == undefined
         object[key] = val
     return object # yes, this is necessary (~2 hours later)
 
@@ -151,8 +143,7 @@ class DLSuperBass
   serialize: (_obj) ->
     # cool little recursion, probably dangerous
     if _obj.toObject?
-      _obj.toObject() # should probably return object
-      _obj
+      _obj.toObject()
     else if typeof _obj in ["string", "number"]
       _obj
     else if _obj instanceof Array
@@ -390,7 +381,6 @@ class DLList extends DLSuperBass
           @elements[i].render @, vis
       else
         # very ugly
-        console.log i
         if vis
           x = @elements[i].repr
           x?.parentNode?.removeChild(x)
