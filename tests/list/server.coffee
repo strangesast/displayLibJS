@@ -11,7 +11,7 @@ app.use bodyParser.urlencoded extended: true
 
 port = 3000
 
-# TODO: this should exist as inherited static method in class definition
+display.set_emulator "127.0.0.1", 1001
 
 app.use express.static "#{__dirname}/"
 
@@ -24,9 +24,16 @@ app.post '/', (req, res) ->
 
   # convert base object to class
   obj = dl.deserialize(object_props)
-  obj.Build()
+  [bufconfigs, bufobjects] = obj.Build()
 
-  res.json(obj)
+  for buf, i in bufconfigs
+    display.send_config buf, i
+
+  for buf in bufobjects
+    display.send buf
+
+  display.get_status (status) ->
+    console.log status.toString()
 
 app.listen port, ->
   console.log "starting list test at localhost:#{port}"

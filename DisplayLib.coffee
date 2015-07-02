@@ -246,7 +246,7 @@ class DLBase extends DLSuperBass
     msg_buffer[pos] = ProtocolCode.MSG_END
     pos++
 
-    return result_buffer: msg_buffer, result_buffer: pos
+    return result_buffer: msg_buffer, result_bytes: pos
 
 
 PIXEL_DENSITY = 10
@@ -307,18 +307,46 @@ class DLTemplate extends DLSuperBass
       obj[each] = @serialize(@[each])
     obj
 
+
   Build: ->
-    # should replicate what it's children do
-    @panels.map (panel) ->
-      console.log panel.BuildMessage()
-    #.map (result) ->
-    #  #Promise.resolve result.result_buffer.slice(0, result.result_bytes) #excessive, but returns promise
-    #.map (prom) ->
-    #  prom.then (buf) ->
-    #    console.log(buf)
 
+    last = false
+    len = @children.length
+    configbufs = @panels
+    .map (element) ->
+      # build each beginning with panels, then children
+      element.BuildMessage()
+    .reduce (prev, curr, i) ->
+      if curr instanceof Array
+        for each in curr
+          prev.push each
+        return prev
+      else
+        prev.push curr
+        return prev
+    , []
+    .map (buf) ->
+      buf.result_buffer.slice 0, buf.result_bytes
 
+    objectbufs = @children
+    .map (element, i) ->
+      # build each beginning with panels, then children
+      if i == len - 1
+        element.is_final = 1
+      element.BuildMessage()
+    .reduce (prev, curr, i) ->
+      if curr instanceof Array
+        for each in curr
+          prev.push each
+        return prev
+      else
+        prev.push curr
+        return prev
+    , []
+    .map (buf) ->
+      buf.result_buffer.slice 0, buf.result_bytes
 
+    return [configbufs, objectbufs]
 
 
 class DLList extends DLSuperBass
@@ -333,9 +361,10 @@ class DLList extends DLSuperBass
     @fg_color = new DLColor 43, 89, 249
     @bg_color = new DLColor 249, 197, 166
     @border_width = 3
+    @is_final = 0
   ) ->
     @through = 0
-    @elements = [] # staged elements
+    @children = [] # staged elements, (DLTextbox)
     @repr = null
 
   type: "list"
@@ -375,27 +404,27 @@ class DLList extends DLSuperBass
     count = @xy.y_size // (@text_height + @text_padding) + @cachec
     @through = @offset // (@text_height + @text_padding)
     for i in [0...Math.min(count, @list.length)] 
-      unless @elements[i]?
-        @elements[i] = new DLTextbox()
+      unless @children[i]?
+        @children[i] = new DLTextbox()
       xy = new XYInfo(
         0
         i*(@text_height+@text_padding) - @offset % (@text_height+@text_padding)
         @xy.x_size
         @text_height
       )
-      @elements[i].xy = xy
-      @elements[i].child ?= new DLText()
+      @children[i].xy = xy
+      @children[i].child ?= new DLText()
       val = @list[i + @through]
       if val?
-        @elements[i].child.text = val
+        @children[i].child.text = val
         if vis
-          @elements[i].render @, vis
+          @children[i].render @, vis
       else
         # very ugly
         if vis
-          x = @elements[i].repr
+          x = @children[i].repr
           x?.parentNode?.removeChild(x)
-        @elements.splice(i, 1)
+        @children.splice(i, 1)
     null
 
   toObject: ->
@@ -415,7 +444,20 @@ class DLList extends DLSuperBass
       obj[each] = @serialize(@[each])
     return obj
 
+  BuildMessage: ->
+    @render(null, false) # instantiate children
 
+    len = @children.length
+    bufs = @children.reduce (prev, curr, i) ->
+      prev.push curr.BuildMessage()
+      if curr.child?
+        if i == len - 1 and @is_final = 1
+          curr.child.is_final = 1
+        prev.push curr.child.BuildMessage()
+      return prev
+    , []
+
+    return bufs
 
 
 MSG_RECT = 101
@@ -432,6 +474,7 @@ class DLRect extends DLBase
   type: MSG_RECT
 
   BuildMessageContents: (msg_buffer, pos) ->
+    encodeint = EncodeInt
     [
       @xy.x
       @xy.y
@@ -440,7 +483,7 @@ class DLRect extends DLBase
       @line_color
       @line_width
     ].reduce (prev, curr, i) ->
-      @EncodeInt curr, msg_buffer, prev
+      encodeint curr, msg_buffer, prev
     , pos
 
 
@@ -492,6 +535,8 @@ class DLTextbox extends DLBase
     return @repr
     
   BuildMessageContents: (msg_buffer, pos) ->
+    encodeint = @EncodeInt
+    encodestring = @EncodeString
     pos = [
       @xy.x
       @xy.y
@@ -507,10 +552,10 @@ class DLTextbox extends DLBase
       @text_xy.y_size
       @char_buffer_size
     ].reduce (prev, curr, i) ->
-      @EncodeInt curr, msg_buffer, prev
+      encodeint curr, msg_buffer, prev
     , pos
 
-    @EncodeString(@preferred_font, msg_buffer, pos)    
+    encodestring @preferred_font, msg_buffer, pos
 
 
 MSG_TEXTBOX_CMD = 161
@@ -575,6 +620,7 @@ class DLTextboxCmd extends DLBase
   @message_param: -1
 
   @BuildMessageContents = (msg_buffer, pos) ->
+    encodeint = @EncodeInt
     [
       @command
       @scope
@@ -587,7 +633,7 @@ class DLTextboxCmd extends DLBase
       @message_command
       @message_param
     ].reduce (prev, curr, i) ->
-      @EncodeInt(curr, msg_buffer, prev)
+      encodeint curr, msg_buffer, prev
     , pos
 
 
@@ -617,6 +663,7 @@ class DLText extends DLBase
     @text_spacing = -1
     @text_flag = TextFlag.TF_NONE
     @preferred_font = ""
+    @is_final = 0
   ) ->
 
   type: MSG_TEXT
@@ -635,6 +682,8 @@ class DLText extends DLBase
       _parent.repr.appendChild(@repr)
 
   BuildMessageContents: (msg_buffer, pos) ->
+    encodeint = @EncodeInt
+    encodestring = @EncodeString
     pos = [
       @fg_color.value
       @bg_color.value
@@ -644,14 +693,14 @@ class DLText extends DLBase
       @text_flag
       @text_spacing
     ].reduce (prev, curr, i) ->
-      @EncodeInt curr, msg_buffer, prev
+      encodeint curr, msg_buffer, prev
     , pos
 
     [
       @preferred_font
       @text
     ].reduce (prev, curr, i) ->
-      @EncodeString curr, msg_buffer, prev
+      encodestring curr, msg_buffer, prev
     , pos
 
 
@@ -713,9 +762,7 @@ class DLPanelDef extends DLBase
 
 
   BuildMessageContents: (msg_buffer, pos) ->
-    orig = pos
     encodeint = @EncodeInt
-    
     pos = [
       @fg_color.value
       @bg_color.value
@@ -732,7 +779,7 @@ class DLPanelDef extends DLBase
       @total_size.y_size
     ].reduce (prev, curr, i) ->
       encodeint curr, msg_buffer, prev
-    , orig
+    , pos
 
     return pos
 
@@ -751,6 +798,7 @@ class DLPanelDef extends DLBase
     ]
       obj[each] = @serialize(@[each])
     obj
+
 
 MSG_GENERIC_CMD = 160
 
@@ -773,14 +821,15 @@ class DLDisplayCmd extends DLBase
   @bright_level: -1
   @bright_range: -1
 
-  @BuildMessageContents: (msg_buffer, pos) ->
+  BuildMessageContents: (msg_buffer, pos) ->
+    encodeint = @EncodeInt
     [
       @display_request
       @update_type
       @bright_level
       @bright_range
     ].reduce (prev, curr, i) ->
-      @EncodeInt curr, msg_buffer, prev
+      encodeint curr, msg_buffer, prev
     , pos
 
 MSG_TEXTBOX_CMD = 161
