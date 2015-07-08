@@ -1,7 +1,7 @@
 express = require 'express'
 bodyParser = require 'body-parser'
 dl = require './DisplayLib.js'
-#display = require '../../displayaddon'
+display = require '../../displayaddon'
 
 app = express()
 
@@ -15,8 +15,7 @@ port = 3000
 app.use express.static "#{__dirname}/"
 
 app.get '/', (req, res) ->
-  #res.sendFile 'index.html', root: __dirname 
-  res.sendFile 'index.html', root: __dirname 
+  res.sendFile 'index.html', root: __dirname  # this always sends index.html, unintuitive
 
 app.post '/', (req, res) ->
   # decode json object
@@ -24,7 +23,11 @@ app.post '/', (req, res) ->
 
   # convert base object to class
   obj = dl.Base.deserialize(object_props)
-  console.log obj
+
+  unless obj.type? != 'Template'
+    return res.send('uh')
+
+  obj.BuildMessage()
   
   res.send()
 

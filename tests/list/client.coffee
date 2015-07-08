@@ -30,11 +30,18 @@ t.elements.push(tb1)
 t.panels.push(p1)
 t.panels.push(p2)
 
+t.recalculateExtents()
+
+s = t.serialize()
+console.log s
+
 vis = t.render()
 tc = document.getElementById 'template-container'
 tc.appendChild vis
 
 
+c = new dl.Color(100, 100, 100, 100)
+console.log c.value
 button = document.getElementById 'button'
 button.onclick = (e) ->
   ob = t.serialize()

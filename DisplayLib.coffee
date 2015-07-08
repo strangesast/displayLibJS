@@ -1,10 +1,232 @@
 SVGNS = "http://www.w3.org/2000/svg"
 
+CMD_NONE = 0
+MSG_NONE = 0
+MSG_RECT = 101
+MSG_TEXTBOX = 110;
+MSG_TEXT = 150
+MSG_PANELDEF = 151
+MSG_TEXTBOX_CMD = 161
+MSG_GENERIC_CMD = 160
+MSG_TIMER_CMD = 162
+MSG_DISPLAY_CMD = 163
+S_PARTICULAR_CONTROL = 1
+
+ObjectCategory = Object.freeze(
+  OC_UNSPECIFIED: 0
+  OC_CONTROL: 1
+  OC_SHAPE: 2
+  OC_DATA: 3
+  OC_COMMAND: 4
+)
+
+ProtocolCode = Object.freeze(
+  MSG_END: 0x01
+  MSG_START: 0x02
+  START_ARRAY: 0x03
+  END_ARRAY: 0x04
+  START_TEXT: 0x05
+  END_ELEMENT: 0x06
+  START_NUMBER_POS: 0x07
+  START_NUMBER_NEG: 0x08
+  FIRST_LEGAL_CHAR: 0x09
+  MAGIC_NUMBER: 0x87
+)
+
+DisplayAttribute = Object.freeze(
+  DA_NONE: 0
+  DA_NORMAL: 1
+  DA_HIDDEN: 2
+  DA_FLASHING: 3
+  DA_TBD_1: 10
+)
+
+GenericScope = Object.freeze(
+  GS_NONE: -1
+  GS_APPLIES_TO_ALL: -2
+)
+
+ScrollCommand = Object.freeze
+  SCROLL_NONE: -1
+  SCROLL_AUTO_BY_LINE: 0
+  SCROLL_AUTO_BY_PAGE: 1
+  SCROLL_MANUAL: 2
+  SCROLL_PAUSE: 10
+  SCROLL_RESUME: 11
+  SCROLL_UP: 12
+  SCROLL_DOWN: 13
+  SCROLL_TO_TOP: 14
+  SCROLL_TO_BOTTOM: 15
+  SCROLL_TO_POSITION: 16
+
+ScrollOrientation = Object.freeze
+  SO_NONE: -1
+  SO_NOSCROLL: 1
+  SO_SCROLL_H: 2
+  SO_SCROLL_V: 3
+
+ScrollEffect = Object.freeze
+  SE_NONE: -1
+  SE_NORMAL: 0
+  SE_SPORTSYNC: 1
+	SE_DIVIDER_BETWEEN_POSTS: 2
+
+MessageCommand = Object.freeze
+  MESSAGE_NONE: -1
+  MESSAGE_SELECT: 0
+  MESSAGE_CYCLE_OFF: 1
+  MESSAGE_CYCLE_ON: 2
+  MESSAGE_CYCLE_PAUSE: 3
+  MESSAGE_CYCLE_RESUME: 4
+  MESSAGE_NEXT: 5
+  MESSAGE_PREV: 6
+  MESSAGE_FIRST: 7
+  MESSAGE_LAST: 8
+  MESSAGE_CREATE: 10
+  MESSAGE_DELETE: 11
+  MESSAGE_CYCLE_RATE: 20
+  MESSAGE_POSTS_MAX: 21
+
+TextAction = Object.freeze
+  TEXT_NOACTION:0
+  TEXT_APPEND: 1
+  TEXT_REPLACE: 2
+  TEXT_CLEAR: 3
+
+TextFlag = Object.freeze
+  TF_NONE: 0
+  TF_LINEBREAK: 1
+  TF_MSGEND: 2
+
+PanelGeometry = Object.freeze
+  PG_NOT_SPECIFIED: 0
+  PG_SINGLE: 1
+  PG_SIDEBYSIDE: 2
+  PG_FOURSQUARE: 3
+
+PanelPosition = Object.freeze
+  PP_NOT_SPECIFIED:0
+  PP_L: 1
+  PP_R: 2
+  PP_TL: 1
+  PP_TR: 2
+  PP_BL: 3
+  PP_BR: 4
+
+PanelLayout = Object.freeze
+  PL_NORMAL: 0
+  PL_REVERSED: 1
+
+DisplayRequest = Object.freeze
+  DISPLAY_NO_REQUEST: 0
+  DISPLAY_CLEAR: 1
+
+UpdateType = Object.freeze
+  UPDATE_NONE: 0
+  UPDATE_SPECIFIED_ITEMS: 1
+  UPDATE_ALL: 2
+
+class Color
+  constructor: (red, green, blue, intensity) ->
+    @value = @allToHex(red, green, blue, intensity)
+
+  eachToHex: (e) ->
+    hex = e.toString(16)
+    if hex.length == 1 then "0#{hex}" else hex
+
+  allToHex: (r, g, b, i) ->
+    return "#{@eachToHex(i)}#{@eachToHex(r)}#{@eachToHex(g)}#{@eachToHex(b)}"
+
+
 class Base
   constructor: (@xy) ->
   
   # should never have a base class, but here for consistency
   type: 'Base' 
+
+  encodeint: (value, encoded_buffer, pos) ->
+    if value < 0
+      value = -value
+      encoded_buffer[pos] = ProtocolCode.START_NUMBER_NEG
+    else
+      encoded_buffer[pos] = ProtocolCode.START_NUMBER_POS
+
+    pos++
+    while value > 0
+      encoded_buffer[pos] = 0x30 + (value & 0x0f)
+      pos++
+      value = value >> 4
+    encoded_buffer[pos] = ProtocolCode.END_ELEMENT
+    pos++
+    return pos
+  
+  encodestring: (string_value, encoded_buffer, pos) ->
+    encoded_buffer[pos] = ProtocolCode.START_TEXT
+    pos++
+    for char, i in string_value
+      if string_value.charCodeAt i < ProtocolCode.FIRST_LEGAL_CHAR
+        continue
+      encoded_buffer[pos] = string_value.charCodeAt i
+      pos++
+    encoded_buffer[pos] = ProtocolCode.END_ELEMENT
+    return pos++
+
+  decodeint: (encoded_buffer, pos) ->
+    is_negative = false
+    if encoded_buffer[pos] == ProtocolCode.START_NUMBER_POS
+    else if encoded_buffer[pos] == ProtocolCode.START_NUMBER_NEG
+      is_negative = true
+    else
+      result_int: 0
+      result_pos: 0
+
+  decodestring: (encoded_buffer, pos) ->
+    if encoded_buffer[pos] !=  ProtocolCode.START_TEXT
+      return 0
+    while true
+      if encoded_buffer[pos] == ProtocolCode.END_ELEMENT
+        pos++
+        break
+      else if encoded_buffer[pos] < ProtocolCode.FIRST_LEGAL_CHAR
+        break
+      return_string = return_string + encoded_buffer[pos]
+    return result_str: return_string, result_pos: pos
+
+
+  buildmessagecontents: (msg_buffer, pos) ->
+    pos
+
+  buildmessage: ->
+    msg_buffer = new Buffer 2000
+    pos = 0
+
+    msg_buffer[pos] = ProtocolCode.MSG_START
+    pos++
+    msg_buffer[pos] = ProtocolCode.MAGIC_NUMBER
+    pos++
+    pos = @encodeint @type, msg_buffer, pos
+
+    scope = @
+
+    pos = [
+      @layer
+      @panel
+      @control
+      @parent_control
+      @is_final
+      @display_attribute
+    ].reduce (prev, curr, i) ->
+      scope.encodeint.call scope, curr, msg_buffer, prev
+    , pos
+
+    pos = @buildmessagecontents msg_buffer, pos
+    msg_buffer[pos] = ProtocolCode.MSG_END
+    pos++
+
+    return result_buffer: msg_buffer, result_bytes: pos
+
+
+
 
   newSVGElement: (kind, attributes) ->
     elem = document.createElementNS SVGNS, kind
@@ -128,6 +350,7 @@ class Template extends Base
           each.set_hidden(bool)
     null
 
+  # determine absolute position / size for rendering and serializing
   recalculateExtents: ->
     ext = {}
     for panel in @panels
@@ -139,6 +362,15 @@ class Template extends Base
       ext.y_low = Math.min ext.y_low, panel.xy.y
       ext.x_high = Math.max ext.x_high, panel.xy.x+panel.xy.x_size
       ext.y_high = Math.max ext.y_high, panel.xy.y+panel.xy.y_size
+
+    for panel in @panels
+      pos = new XYInfo(
+        ext.x_low
+        ext.y_low
+        ext.x_high-ext.x_low
+        ext.y_high-ext.y_low
+      )
+      panel.total_size = pos
 
     @extents = ext
     return @extents
@@ -165,7 +397,6 @@ class Template extends Base
       viewBox: viewbox_str
       width: (extents.x_high-extents.x_low)*@pixels
       height: (extents.y_high-extents.y_low)*@pixels
-
 
     return repr
 
@@ -232,19 +463,72 @@ class Template extends Base
         y: e.clientY
 
 
+  buildmessage: ->
+
+    temp = []
+    for panel, i in @panels
+      message = panel.buildmessage()
+      temp.push message
+
+    for element, i in @panels
+      message = elemen.buildmessage()
+      temp.push message
+
+    return temp
+
+
 class Panel extends Base
   # name (string) used to identify later, probably unnecessary
   # xy (xyinfo) position / size information
-  constructor: (@name, @xy) ->
+  # total_size (xyinfo) template position / size information
+  constructor: (
+    @name
+    @xy
+    @total_size=new XYInfo()
+    @fg_color= new Color(200, 200, 200, 200)
+    @bg_color= new Color(80, 80, 80, 80)
+  ) ->
+    @geometry = PanelGeometry.PG_NOT_SPECIFIED
+    @position = PanelPosition.PP_NOT_SPECIFIED
+    @layout = PanelLayout.PL_NORMAL
 
   type: 'Panel'
 
   render_color: 'rgba(120, 120, 120, 1.0)'
 
+  buildmessagecontents: (msg_buffer, pos) ->
+    scope = @
+    pos = [
+      @fg_color.value
+      @bg_color.value
+      @geometry
+      @position
+      @layout
+      @xy.x
+      @xy.y
+      @xy.x_size
+      @xy.y_size
+      @total_size.x
+      @total_size.y
+      @total_size.x_size
+      @total_size.y_size
+    ].reduce (prev, curr, i) ->
+      scope.encodeint.call scope, curr, msg_buffer, prev
+    , pos
+
+    return pos
+
+
 
 class Textbox extends Base
   # xy (xyinfo) position / size information
-  constructor: (@xy, text) ->
+  constructor: (
+    @xy
+    text
+    @fg_color= new Color(200, 200, 200, 200)
+    @bg_color= new Color(120, 120, 120, 200)
+    @border_color = new Color(120, 120, 120, 120)
+  ) ->
     @elements = []
     if text
       @elements.push new Text(@xy, text)
@@ -267,7 +551,13 @@ class Textbox extends Base
 
 
 class Text extends Base
-  constructor: (@xy, @text='undefined', @font_size="6px", @font_family="Sans Serif") ->
+  constructor: (
+    @xy
+    @text='undefined'
+    @font_size="6px"
+    @font_family="Sans Serif"
+    @fg_color = new Color(255, 234, 8, 200)
+  ) ->
 
   type: 'Text'
 
@@ -299,6 +589,7 @@ class Text extends Base
     return @repr
 
 exports =
+  'Color': Color
   'Base': Base
   'XYInfo': XYInfo
   'Template': Template
