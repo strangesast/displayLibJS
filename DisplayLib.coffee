@@ -32,13 +32,14 @@ class Base
       width: @xy.x_size
       height: @xy.y_size
       visibility: 'inherit'
+      draggable: true
 
     if @render_color?
       b_attributes.fill = @render_color
 
-    bounds = @newSVGElement 'rect', b_attributes
+    @bounds = @newSVGElement 'rect', b_attributes
 
-    repr.appendChild bounds
+    repr.appendChild @bounds
 
     return repr
 
@@ -106,7 +107,8 @@ class Template extends Base
   # panels (list) list of panel objects used to render template
   # elements (list) list of objects in panel
   # pixels (integer) number of pixels to represent one pixel on display
-  constructor: (@name, @panels=[], @elements=[], @pixels=10) ->
+  # render_delay (integer) how long to wait before readjusting template in milliseconds
+  constructor: (@name, @panels=[], @elements=[], @pixels=10, @render_delay=100) ->
     # adjust template extents for panels
     @extents = @recalculateExtents()
 
@@ -138,7 +140,6 @@ class Template extends Base
       ext.x_high = Math.max ext.x_high, panel.xy.x+panel.xy.x_size
       ext.y_high = Math.max ext.y_high, panel.xy.y+panel.xy.y_size
 
-    console.log ext
     @extents = ext
     return @extents
 
@@ -165,19 +166,55 @@ class Template extends Base
       width: (extents.x_high-extents.x_low)*@pixels
       height: (extents.y_high-extents.y_low)*@pixels
 
+
     return repr
 
   render: ->
+    @currently_moving = null
     @extents = @recalculateExtents()
     repr = @render_self()
+
+    scope = @
+    move = (e) =>
+      if @currently_moving?
+        start = @currently_moving.start_position
+        end =
+          x: e.clientX
+          y: e.clientY
+        
+        offsetx = (end.x - start.x)/@pixels
+        offsety = (end.y - start.y)/@pixels
+        elem = @currently_moving.element
+        elem_repr = elem.repr
+        elem_repr.setAttribute 'transform', "translate(#{elem.xy.x+offsetx}, #{elem.xy.y+offsety})"
+        unless e.type == "mousemove"
+          @currently_moving = null 
+          elem.xy.x += Math.round offsetx
+          elem.xy.y += Math.round offsety
+          elem_repr.setAttribute 'transform', "translate(#{elem.xy.x}, #{elem.xy.y})"
+          setTimeout ->
+            scope.render.call(scope)
+          , scope.render_delay
+      null
+   
+    repr.addEventListener 'mousemove', move
+    repr.addEventListener 'mouseup', move
+    repr.addEventListener 'mouseout', move
+
+    attachMoverListener = (elem) ->
+      movestart = (e) ->
+        scope.set_moving elem, e
+      elem.bounds.addEventListener 'mousedown', movestart
 
     for panel in @panels
       panel_repr = panel.render()
       repr.appendChild panel_repr
+      attachMoverListener panel
 
     for element in @elements
       element_repr = element.render()
       repr.appendChild element_repr
+      #attachMoverListener element if element.bounds? # probably not necessary
 
     # if already defined (and presumably attached to a parent node) replace
     # that node with the new one
@@ -185,6 +222,14 @@ class Template extends Base
 
     @repr = repr
     return @repr
+
+  # cooooool =>
+  set_moving: (elem, e) =>
+    @currently_moving = 
+      element: elem
+      start_position: 
+        x: e.clientX
+        y: e.clientY
 
 
 class Panel extends Base

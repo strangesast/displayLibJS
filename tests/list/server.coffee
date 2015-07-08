@@ -1,6 +1,6 @@
 express = require 'express'
 bodyParser = require 'body-parser'
-#dl = require './DisplayLib.js'
+dl = require './DisplayLib.js'
 #display = require '../../displayaddon'
 
 app = express()
@@ -18,27 +18,16 @@ app.get '/', (req, res) ->
   #res.sendFile 'index.html', root: __dirname 
   res.sendFile 'index.html', root: __dirname 
 
-#app.post '/', (req, res) ->
-#  # decode json object
-#  object_props = req.body
-#
-#  # convert base object to class
-#  obj = dl.deserialize(object_props)
-#  [bufconfigs, bufobjects] = obj.Build()
-#
-#  for buf, i in bufconfigs
-#    display.send_config buf, i
-#
-#  response = []
-#  tos = (index, buf) ->
-#    console.log index, buf
-#    response[index] = buf.toString()
-#    unless bufobjects[index]?
-#      return res.json(response)
-#    else
-#      display.send bufobjects[index], (_buf) ->
-#        tos index++, _buf
-#
+app.post '/', (req, res) ->
+  # decode json object
+  object_props = req.body
+
+  # convert base object to class
+  obj = dl.Base.deserialize(object_props)
+  console.log obj
+  
+  res.send()
+
 app.listen port, ->
   console.log "starting list test at localhost:#{port}"
 

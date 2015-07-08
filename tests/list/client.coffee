@@ -29,26 +29,21 @@ tb1 = new dl.Textbox(tbp1, "text")
 t.elements.push(tb1)
 t.panels.push(p1)
 t.panels.push(p2)
-t.render()
 
-
-
+vis = t.render()
 tc = document.getElementById 'template-container'
-tc.appendChild t.render()
+tc.appendChild vis
 
-#p1.addEventListener 'ontouchstart', movestart
-movestart = (e) ->
-  console.log e
 
-p1.repr.addEventListener 'onmousedown', movestart
+button = document.getElementById 'button'
+button.onclick = (e) ->
+  ob = t.serialize()
+  makeRequest(ob).then (res) ->
+    console.log 'submitted'
+    console.log res 
 
-#setTimeout ->
-#  s = t.serialize()
-#  # returns a new object
-#  d = dl.Base.deserialize(s)
-#  console.log d
-#, 1000
-
+#t.repr.addEventListener 'mouseup', moveend
+#t.repr.addEventListener 'mouseout', moveend
 
 #setTimeout ->
 #  setInterval ->
