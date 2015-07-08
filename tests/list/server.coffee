@@ -1,8 +1,7 @@
 express = require 'express'
 bodyParser = require 'body-parser'
-dl = require './DisplayLib.js'
-display = require '../../displayaddon'
-Promise = require('es6-promise').Promise
+#dl = require './DisplayLib.js'
+#display = require '../../displayaddon'
 
 app = express()
 
@@ -11,30 +10,35 @@ app.use bodyParser.urlencoded extended: true
 
 port = 3000
 
-display.set_emulator "127.0.0.1", 1001
+#display.set_emulator "127.0.0.1", 1001
 
 app.use express.static "#{__dirname}/"
 
 app.get '/', (req, res) ->
+  #res.sendFile 'index.html', root: __dirname 
   res.sendFile 'index.html', root: __dirname 
 
-app.post '/', (req, res) ->
-  # decode json object
-  object_props = req.body
-
-  # convert base object to class
-  obj = dl.deserialize(object_props)
-  [bufconfigs, bufobjects] = obj.Build()
-
-  for buf, i in bufconfigs
-    display.send_config buf, i
-
-  for buf in bufobjects
-    display.send buf
-
-  display.get_status (status) ->
-    console.log status.toString()
-
+#app.post '/', (req, res) ->
+#  # decode json object
+#  object_props = req.body
+#
+#  # convert base object to class
+#  obj = dl.deserialize(object_props)
+#  [bufconfigs, bufobjects] = obj.Build()
+#
+#  for buf, i in bufconfigs
+#    display.send_config buf, i
+#
+#  response = []
+#  tos = (index, buf) ->
+#    console.log index, buf
+#    response[index] = buf.toString()
+#    unless bufobjects[index]?
+#      return res.json(response)
+#    else
+#      display.send bufobjects[index], (_buf) ->
+#        tos index++, _buf
+#
 app.listen port, ->
   console.log "starting list test at localhost:#{port}"
 

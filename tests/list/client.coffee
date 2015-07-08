@@ -15,106 +15,45 @@ makeRequest = (data, location = '/', method = 'POST') ->
     _request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8')
     _request.send(data)
 
-list_a = new dl.List(
-  new dl.XYInfo(0, 0, 50, 30)
-  [
-    "one"
-    "two"
-    "three"
-    "four"
-    "five"
-    "six"
-  ] #values
-  7 #display height
-  1 #row spacing,
-)
+# parent size
+t = new dl.Template('toasty template')
+pp1 = new dl.XYInfo(0, 0, 60, 32)
+p1 = new dl.Panel('panel 1', pp1)
 
-template = new dl.Template(
-  new dl.XYInfo(0, 0, 120, 32)
-  "first"
-)
+pp2 = new dl.XYInfo(60, 10, 60, 32)
+p2 = new dl.Panel('panel 2', pp2)
+
+tbp1 = new dl.XYInfo(0, 0, 20, 10)
+tb1 = new dl.Textbox(tbp1, "text")
+
+t.elements.push(tb1)
+t.panels.push(p1)
+t.panels.push(p2)
+t.render()
 
 
 
-panel_one = new dl.PanelDef(
-  new dl.XYInfo(0, 0, 60, 32) # panel_location
-  new dl.XYInfo(0, 0, 120, 32) # total_size
-  1 # position
-  1 # layout
-  1 # control
-)
+tc = document.getElementById 'template-container'
+tc.appendChild t.render()
 
-console.log(panel_one.__proto__.__proto__)
+#p1.addEventListener 'ontouchstart', movestart
+movestart = (e) ->
+  console.log e
 
-panel_two = new dl.PanelDef(
-  new dl.XYInfo(60, 0, 60, 32)
-  new dl.XYInfo(0, 0, 120, 32)
-  2
-  0
-  2
-)
+p1.repr.addEventListener 'onmousedown', movestart
 
-template.children = [list_a]
-template.panels = [panel_one, panel_two]
-console.log(template)
+#setTimeout ->
+#  s = t.serialize()
+#  # returns a new object
+#  d = dl.Base.deserialize(s)
+#  console.log d
+#, 1000
 
 
-container = document.getElementById('template-container')
-template.render(container)
-template_obj = template.toObject()
-
-makeRequest(template_obj).then (result) ->
-  console.log(JSON.parse(result))
-
-"""
-current = null
-
-trigger = (val) ->
-  current = setInterval ->
-    list_a.render container
-    o = list_a.set_offset(list_a.offset + val)
-    unless o
-      clearInterval(current)
-  , 100
-
-setHeight = (height) ->
-  if 0 < height < 200
-    list_a.xy.y_size = height
-    list_a.render container
-    true
-  else
-    false
-
-setWidth = (width) ->
-  if 0 < width < 200
-    list_a.xy.x_size = width
-    list_a.render container
-    true
-  else
-    false
-      
-start = (e) ->
-  clearInterval(current)
-  if e.target.innerHTML == "UP"
-    trigger(1)
-  else if e.target.innerHTML == "DOWN"
-    trigger(-1)
-
-change = (e) ->
-  bu = e.target.innerHTML
-  inp = document.getElementById(bu.toLowerCase()).value
-  if bu == "HEIGHT"
-    setHeight(inp)
-  else if bu == "WIDTH"
-    setWidth(inp)
-  #val = document.getElementById('height').value
-  #setHeight(val)
-
-buttons = document.querySelectorAll('.scroll')
-for but in buttons
-  but.addEventListener 'click', start
-
-buttons = document.querySelectorAll('.size')
-for but in buttons
-  but.addEventListener 'click', change
-"""
+#setTimeout ->
+#  setInterval ->
+#    panel = t.panels[0]
+#    panel.xy.y+=1
+#    t.render() 
+#  , 1000
+#, 3000

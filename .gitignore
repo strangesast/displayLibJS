@@ -3,4 +3,5 @@ DisplayLib.js
 *.js
 npm-debug.log
 tests/**/*.js
+tests/**/*.txt
 displayaddon.node
