@@ -441,12 +441,12 @@ class Template extends Base
     for panel in @panels
       panel_repr = panel.render()
       repr.appendChild panel_repr
-      attachMoverListener panel
+      attachMoverListener panel if panel.move_unlocked? == true
 
     for element in @elements
       element_repr = element.render()
       repr.appendChild element_repr
-      #attachMoverListener element if element.bounds? # probably not necessary
+      attachMoverListener element if element.bounds? and element.move_unlocked? == true # probably not necessary
 
     # if already defined (and presumably attached to a parent node) replace
     # that node with the new one
@@ -494,6 +494,7 @@ class Panel extends Base
   constructor: (
     @name
     @xy
+    @move_unlocked = true
     @total_size=new XYInfo()
     @fg_color= new Color(200, 200, 200, 200)
     @bg_color= new Color(80, 80, 80, 80)
@@ -544,6 +545,7 @@ class Textbox extends Base
   constructor: (
     @xy
     text
+    @move_unlocked = true
     @control = Math.floor(Math.random()*100)
     @text_xy = new XYInfo()
     @fg_color= new Color(200, 200, 200, 200)
