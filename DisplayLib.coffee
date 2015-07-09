@@ -142,7 +142,7 @@ class Base
   constructor: (@xy) ->
   
   # should never have a base class, but here for consistency
-  type: 'Base' 
+  string_type: 'Base' 
 
   encodeint: (value, encoded_buffer, pos) ->
     if value < 0
@@ -161,6 +161,7 @@ class Base
     return pos
   
   encodestring: (string_value, encoded_buffer, pos) ->
+    throw new Error "#{string_value} is not a string" unless typeof string_value == 'string'
     encoded_buffer[pos] = ProtocolCode.START_TEXT
     pos++
     for char, i in string_value
@@ -240,12 +241,12 @@ class Base
 
   render_self: (visibility) ->
     r_attributes = 
-      name: "#{@type}"
+      name: "#{@string_type}"
       transform: "translate(#{@xy.x}, #{@xy.y})"
       visibility: visibility
 
     if @name?
-      r_attributes['id'] = "#{@type}_#{@name.replace(' ', '_')}"
+      r_attributes['id'] = "#{@string_type}_#{@name.replace(' ', '_')}"
 
     repr = @newSVGElement 'g', r_attributes
 
@@ -292,10 +293,10 @@ class Base
 
   # convert object back to class instance
   @deserialize = (obj) ->
-    throw new Error('not a valid object') unless obj?.type?
-    throw new Error('not in exports') unless exports[obj.type]?
+    throw new Error('not a valid object') unless obj?.string_type?
+    throw new Error('not in exports') unless exports[obj.string_type]?
 
-    object = new exports[obj.type]
+    object = new exports[obj.string_type]
 
     for prop of obj
       val = obj[prop]
@@ -304,7 +305,7 @@ class Base
         for each in val
           temp.push @deserialize(each)
         object[prop] = temp
-      else if val.type?
+      else if val.string_type?
         object[prop] = @deserialize(val)
       else
         object[prop] = val
@@ -315,7 +316,7 @@ class Base
 class XYInfo extends Base
   constructor: (@x=0, @y=0, @x_size=0, @y_size=0) ->
 
-  type: 'XYInfo'
+  string_type: 'XYInfo'
 
   clear: ->
     @x = 0
@@ -335,7 +336,7 @@ class Template extends Base
     @extents = @recalculateExtents()
 
   # always same string (and case) as class name
-  type: 'Template'
+  string_type: 'Template'
 
   set_hidden: (bool, what="all") ->
     switch what
@@ -392,8 +393,8 @@ class Template extends Base
     ].join(" ")
 
     repr = @newSVGElement 'svg',
-      id: "#{@type}_#{@name.replace(' ', '_')}"
-      name: "#{@type}"
+      id: "#{@string_type}_#{@name.replace(' ', '_')}"
+      name: "#{@string_type}"
       viewBox: viewbox_str
       width: (extents.x_high-extents.x_low)*@pixels
       height: (extents.y_high-extents.y_low)*@pixels
@@ -462,17 +463,26 @@ class Template extends Base
         x: e.clientX
         y: e.clientY
 
-
   buildmessage: ->
-
     temp = []
     for panel, i in @panels
       message = panel.buildmessage()
       temp.push message
 
-    for element, i in @panels
-      message = elemen.buildmessage()
-      temp.push message
+    for element, i in @elements
+      is_final = if i+1 == @elements.length then 1 else 0
+
+      if element.elements?.length > 0
+        message = element.buildmessage()
+        temp.push message
+        for child, j in element.elements
+          is_final = if j+1 == element.elements.length then is_final else 0
+          child.is_final = is_final
+          temp.push child.buildmessage()
+      else
+        element.is_final
+        message = element.buildmessage()
+        temp.push message
 
     return temp
 
@@ -487,12 +497,21 @@ class Panel extends Base
     @total_size=new XYInfo()
     @fg_color= new Color(200, 200, 200, 200)
     @bg_color= new Color(80, 80, 80, 80)
-  ) ->
     @geometry = PanelGeometry.PG_NOT_SPECIFIED
     @position = PanelPosition.PP_NOT_SPECIFIED
     @layout = PanelLayout.PL_NORMAL
+    @category = ObjectCategory.OC_UNSPECIFIED;
+    @layer = 0
+    @panel = 0
+    @control = 0
+    @parent_control = 0
+    @is_final = 0
+    @display_attribute = DisplayAttribute.DA_NONE
+  ) ->
 
-  type: 'Panel'
+  type: MSG_PANELDEF
+
+  string_type: 'Panel'
 
   render_color: 'rgba(120, 120, 120, 1.0)'
 
@@ -525,15 +544,47 @@ class Textbox extends Base
   constructor: (
     @xy
     text
+    @control = Math.floor(Math.random()*100)
+    @text_xy = new XYInfo()
     @fg_color= new Color(200, 200, 200, 200)
     @bg_color= new Color(120, 120, 120, 200)
     @border_color = new Color(120, 120, 120, 120)
+    @border_width = 1
+    @scroll_type = 3
+    @preferred_font = ""
   ) ->
     @elements = []
     if text
-      @elements.push new Text(@xy, text)
+      t = new Text(@text_xy, text, @control)
+      @elements.push new Text(@text_xy, text)
   
-  type: 'Textbox'
+  string_type: 'Textbox'
+
+  buildmessagecontents: (msg_buffer, pos) ->
+    scope = @
+
+    pos = [
+      @xy.x
+      @xy.y
+      @xy.x_size
+      @xy.y_size
+      @fg_color
+      @bg_color
+      @border_color
+      @border_width
+      @text_xy.x
+      @text_xy.y
+      @text_xy.x_size
+      @text_xy.y_size
+      @char_buffer_size
+    ].reduce (prev, curr, i) ->
+      scope.encodeint.call scope, curr, msg_buffer, prev
+    , pos
+
+    pos = scope.encodestring.call scope, @preferred_font, msg_buffer, pos
+
+    return pos
+
 
   render_color: 'rgba(140, 140, 140, 1.0)'
 
@@ -554,12 +605,38 @@ class Text extends Base
   constructor: (
     @xy
     @text='undefined'
+    @parent_control
     @font_size="6px"
     @font_family="Sans Serif"
+    @preferred_font=""
     @fg_color = new Color(255, 234, 8, 200)
+    @bg_color = new Color(205, 184, 8, 150)
   ) ->
 
-  type: 'Text'
+  string_type: 'Text'
+
+  buildmessagecontents: (msg_buffer, pos) ->
+    scope = @
+    pos = [
+      @fg_color.value
+      @bg_color.value
+      @position
+      @message
+      @text_action
+      @text_flag
+      @text_spacing
+    ].reduce (prev, curr, i) ->
+      scope.encodeint.call scope, curr, msg_buffer, prev
+    , pos
+
+    [
+      @preferred_font
+      @text
+    ].reduce (prev, curr, i) ->
+      scope.encodestring.call scope, curr, msg_buffer, prev
+    , pos
+
+    return pos
 
   render_color: 'rgba(160, 160, 160, 1.0)'
 
@@ -588,6 +665,32 @@ class Text extends Base
 
     return @repr
 
+
+class DisplayCmd extends Base
+  constructor: (
+    type = MSG_DISPLAY_CMD
+    display_request = DisplayRequest.DISPLAY_NO_REQUEST
+    update_type = UpdateType.UPDATE_NONE
+    bright_level = -1
+    bright_range = -1
+  ) ->
+
+  string_type: 'DisplayCmd'
+
+  buildmessagecontents: (msg_buffer, pos) ->
+    scope = @
+    pos = [
+      @display_request
+      @update_type
+      @bright_level
+      @bright_range
+    ].reduce (prev, curr, i) ->
+      scope.encodeint.call scope, curr, msg_buffer, prev
+    , pos
+
+    return pos
+
+
 exports =
   'Color': Color
   'Base': Base
@@ -596,6 +699,34 @@ exports =
   'Panel': Panel
   'Textbox': Textbox
   'Text': Text
+  'DisplayCmd': DisplayCmd
+  'ObjectCategory': ObjectCategory
+  'ProtocolCode': ProtocolCode
+  'DisplayAttribute': DisplayAttribute
+  'GenericScope': GenericScope
+  'ScrollCommand': ScrollCommand
+  'ScrollOrientation': ScrollOrientation
+  'ScrollEffect': ScrollEffect
+  'MessageCommand': MessageCommand
+  'TextAction': TextAction
+  'TextFlag': TextFlag
+  'PanelGeometry': PanelGeometry
+  'PanelPosition': PanelPosition
+  'PanelLayout': PanelLayout
+  'DisplayRequest': DisplayRequest
+  'UpdateType': UpdateType
+  'CMD_NONE': CMD_NONE
+  'MSG_NONE': MSG_NONE
+  'MSG_RECT': MSG_RECT
+  'MSG_TEXTBOX': MSG_TEXTBOX
+  'MSG_TEXT': MSG_TEXT
+  'MSG_PANELDEF': MSG_PANELDEF
+  'MSG_TEXTBOX_CMD': MSG_TEXTBOX_CMD
+  'MSG_GENERIC_CMD': MSG_GENERIC_CMD
+  'MSG_TIMER_CMD': MSG_TIMER_CMD
+  'MSG_DISPLAY_CMD': MSG_DISPLAY_CMD
+  'S_PARTICULAR_CONTROL': S_PARTICULAR_CONTROL
+
 
 if module?
   module.exports = exports

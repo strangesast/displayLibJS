@@ -16,15 +16,32 @@ makeRequest = (data, location = '/', method = 'POST') ->
     _request.send(data)
 
 # parent size
-t = new dl.Template('toasty template')
+t = new dl.Template('first template')
+
+#@name
+#@xy
+#@total_size=new XYInfo()
+#@fg_color= new Color(200, 200, 200, 200)
+#@bg_color= new Color(80, 80, 80, 80)
+#@geometry = PanelGeometry.PG_NOT_SPECIFIED
+#@position = PanelPosition.PP_NOT_SPECIFIED
+#@layout = PanelLayout.PL_NORMAL
+
 pp1 = new dl.XYInfo(0, 0, 60, 32)
 p1 = new dl.Panel('panel 1', pp1)
+p1.control = 1 # this is defined but not serialized / sent?
+p1.layout = 1
+p1.position = 1
 
 pp2 = new dl.XYInfo(60, 10, 60, 32)
 p2 = new dl.Panel('panel 2', pp2)
+p2.control = 2
+p2.layout = 0
+p2.position = 2
 
 tbp1 = new dl.XYInfo(0, 0, 20, 10)
 tb1 = new dl.Textbox(tbp1, "text")
+tb1.control = 12
 
 t.elements.push(tb1)
 t.panels.push(p1)

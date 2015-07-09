@@ -24,12 +24,69 @@ app.post '/', (req, res) ->
   # convert base object to class
   obj = dl.Base.deserialize(object_props)
 
-  unless obj.type? != 'Template'
+  unless obj.string_type? != 'Template'
     return res.send('uh')
 
-  obj.BuildMessage()
+
+  b = obj.buildmessage()
+  # send panels
+
+  config_buffer_queue = []
+  for i in [0...obj.panels.length]
+    result = b[i]
+    send_buf = result.result_buffer.slice(0,result.result_bytes)
+    config_buffer_queue.push send_buf
+    #console.log obj.panels[i]
   
-  res.send()
+  buffer_queue = []
+
+  dc = new dl.DisplayCmd()
+  dc.display_request = dl.DisplayRequest.DISPLAY_CLEAR;
+  dc.update_type = dl.UpdateType.UPDATE_ALL;
+  dc.panel = dl.GenericScope.GS_APPLIES_TO_ALL;
+  dc.is_final = 1;
+
+  result = dc.buildmessage()
+  send_buf = result.result_buffer.slice(0,result.result_bytes)
+  buffer_queue.push send_buf
+
+  for i in [obj.panels.length...b.length]
+    result = b[i]
+    send_buf = result.result_buffer.slice(0,result.result_bytes)
+    buffer_queue.push send_buf
+
+  display.set_emulator '127.0.0.1', 1001
+
+  results = []
+
+  reportStatus = (buf) ->
+    console.log "STATUS: #{buf.toString()}"
+
+  config_buffer_queue.reduce (prev, curr, i) ->
+    prev.then (elem) ->
+      return new Promise (resolve, reject) ->
+        console.log i
+        s = display.send_config curr, i+1
+        results.push s
+        resolve s
+  , Promise.resolve()
+  .then ->
+    buffer_queue.reduce (prev, curr, i) ->
+      prev.then (elem) ->
+        return new Promise (resolve, reject) ->
+          console.log i
+          s = display.send curr, reportStatus
+          results.push s
+          resolve s
+    , Promise.resolve()
+    .then ->
+      console.log 'completed with no error'
+      res.json(results)
+    .catch ->
+      res.json('error2')
+  .catch ->
+    res.json('error1')
+
 
 app.listen port, ->
   console.log "starting list test at localhost:#{port}"
