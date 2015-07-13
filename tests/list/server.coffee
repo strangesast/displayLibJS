@@ -2,7 +2,6 @@ express = require 'express'
 bodyParser = require 'body-parser'
 dl = require './DisplayLib.js'
 display = require '../../displayaddon'
-#display_action = require './display_action.js'
 di = require './display_interface.js'
 mongoclient = require('mongodb').MongoClient
 
@@ -30,8 +29,8 @@ connect_to_db = ->
           console.log "success"
           resolve(db)
 
-
 app.use express.static "#{__dirname}/"
+
 
 app.get '/', (req, res) ->
   res.sendFile 'index.html', root: __dirname  # this always sends index.html, unintuitive
@@ -57,6 +56,7 @@ app.all '/list-templates', (req, res) ->
       respond err
 
 app.post '/', (req, res) ->
+  # decode json object
   object_props = req.body
 
   name = object_props.name
@@ -88,6 +88,8 @@ app.post '/', (req, res) ->
   .then ->
     # build message & send
     di.templateFull(req.body)
+    console.log ('post complete')
+    res.json('')
 
 
 app.listen port, ->

@@ -10,7 +10,7 @@
   "author": "Jim Zagrobelny",
   "scripts": {
     "install": "coffee -c DisplayLib.coffee",
-    "test": "coffee -c *.coffee && node test-server.js"
+    "test": "coffee -c *.coffee && node /tests/list/server.js"
   },
   "devDependencies": {
     "body-parser": "^1.13.1",
