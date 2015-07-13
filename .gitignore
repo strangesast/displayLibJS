@@ -5,3 +5,4 @@ npm-debug.log
 tests/**/*.js
 tests/**/*.txt
 displayaddon.node
+!tests/list/display_interface.js

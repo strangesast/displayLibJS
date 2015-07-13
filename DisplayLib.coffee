@@ -128,15 +128,46 @@ UpdateType = Object.freeze
 
 class Color
   constructor: (red, green, blue, intensity) ->
-    @value = @allToHex(red, green, blue, intensity)
+    @value = -1
+    #test for being called with no arguments
+    if typeof red == "undefined"
+      @value = -1
+    #test for called with only 3 arguments
+    else if typeof intensity == "undefined"
+      @value = 0x7f000000 + ((red & 0xff)<< 16) + ((green & 0xff) << 8) + (blue & 0xff)
+    else
+      l_intensity = 100;
+      if (intensity > 0 && intensity < 100)
+        l_intensity = intensity
+      @value = (l_intensity << 24) + ((red & 0xff)<< 16) + ((green & 0xff) << 8) + (blue & 0xff)
+  red: () ->
+    return (@value >> 16) & 0xff
+  green: () ->
+    return (@value>>8) & 0xff
+  blue: () ->
+    return @value & 0xff
+  RGB: (red, green, blue, intensity) ->
+    l_intensity = 100
+    if (typeof intensity != "undefined" && intensity > 0 && intensity < 100)
+      l_intensity = intensity
+    @value = (l_intensity << 24) + ((red & 0xff)<< 16) + ((green & 0xff) << 8) + (blue & 0xff);
+  get_intensity: () ->
+    intensity = (@value & 0x7f000000) >> 24;
+    if (intensity > 100 || intensity < 0)
+      intensity = 100;
+    return intensity;
+  
+  set_intensity: (intensity) ->
+    if (intensity < 0 || intensity > 100)
+      intensity = 100
+    @value = (@value & 0x00ffffff) | (intensity << 24)
 
-  eachToHex: (e) ->
-    hex = e.toString(16)
-    if hex.length == 1 then "0#{hex}" else hex
-
-  allToHex: (r, g, b, i) ->
-    return "#{@eachToHex(i)}#{@eachToHex(r)}#{@eachToHex(g)}#{@eachToHex(b)}"
-
+  set_empty: () ->
+    @value = -1
+  is_empty: () ->
+    return @value & 0xff000000 == 0xff000000
+  get_value: () ->
+    return @value
 
 class Base
   constructor: (@xy) ->
@@ -496,8 +527,8 @@ class Panel extends Base
     @xy
     @move_unlocked = true
     @total_size=new XYInfo()
-    @fg_color= new Color(200, 200, 200, 200)
-    @bg_color= new Color(80, 80, 80, 80)
+    @fg_color= new Color()
+    @bg_color= new Color()
     @geometry = PanelGeometry.PG_NOT_SPECIFIED
     @position = PanelPosition.PP_NOT_SPECIFIED
     @layout = PanelLayout.PL_NORMAL
@@ -546,11 +577,11 @@ class Textbox extends Base
     @xy
     text
     @move_unlocked = true
-    @control = Math.floor(Math.random()*100)
+    @control = -1
     @text_xy = new XYInfo()
-    @fg_color= new Color(200, 200, 200, 200)
-    @bg_color= new Color(120, 120, 120, 200)
-    @border_color = new Color(120, 120, 120, 120)
+    @fg_color= new Color()
+    @bg_color= new Color()
+    @border_color = new Color()
     @border_width = 1
     @scroll_type = 3
     @preferred_font = ""
@@ -611,8 +642,8 @@ class Text extends Base
     @font_size="6px"
     @font_family="Sans Serif"
     @preferred_font=""
-    @fg_color = new Color(255, 234, 8, 200)
-    @bg_color = new Color(205, 184, 8, 150)
+    @fg_color = new Color(255, 234, 8)
+    @bg_color = new Color(205, 184, 8)
   ) ->
 
   string_type: 'Text'
@@ -670,11 +701,11 @@ class Text extends Base
 
 class DisplayCmd extends Base
   constructor: (
-    type = MSG_DISPLAY_CMD
-    display_request = DisplayRequest.DISPLAY_NO_REQUEST
-    update_type = UpdateType.UPDATE_NONE
-    bright_level = -1
-    bright_range = -1
+    @type = MSG_DISPLAY_CMD
+    @display_request = DisplayRequest.DISPLAY_NO_REQUEST
+    @update_type = UpdateType.UPDATE_NONE
+    @bright_level = -1
+    @bright_range = -1
   ) ->
 
   string_type: 'DisplayCmd'

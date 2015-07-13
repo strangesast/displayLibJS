@@ -2,6 +2,7 @@ express = require 'express'
 bodyParser = require 'body-parser'
 dl = require './DisplayLib.js'
 display = require '../../displayaddon'
+display_action = require './display_action.js'
 
 app = express()
 
@@ -54,8 +55,11 @@ app.post '/', (req, res) ->
     result = b[i]
     send_buf = result.result_buffer.slice(0,result.result_bytes)
     buffer_queue.push send_buf
-
-  display.set_emulator '127.0.0.1', 1001
+  
+#display_action.initDisplay();
+#display_action.originalTest();
+  
+  display.set_emulator '192.168.1.94', 1001
 
   results = []
 
