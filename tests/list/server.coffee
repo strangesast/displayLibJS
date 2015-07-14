@@ -75,14 +75,14 @@ app.post '/', (req, res) ->
   connect_to_db().then (db) ->
     template_collection = db.collection 'templates'
     new Promise (resolve, reject) ->
-      template_collection.insert object_props, { w: 1 }, (err, result) ->
+      template_collection.update { _id: object_props._id }, object_props, { upsert: true }, (err, result) ->
         if err?
           reject err
         else
           resolve result
  
   .then (result) ->
-    console.log "success"
+    console.log "successful save"
   .catch (result) ->
     console.log "failed to save"
   .then ->

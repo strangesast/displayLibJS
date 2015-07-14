@@ -1,5 +1,5 @@
 dl = require './DisplayLib'
-dlA = require './DisplayLibA'
+#dlA = require './DisplayLibA'
 display = require '../../displayaddon'
 
 ###
@@ -64,6 +64,7 @@ templateFull = (json_text) ->
       element.is_final = 1
     console.log 'control id = ' + element.control
 #    element.control = 12
+
     result = element.buildmessage()
     send_buf = result.result_buffer.slice 0, result.result_bytes
     display.send send_buf
