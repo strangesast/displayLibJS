@@ -2,7 +2,8 @@ express = require 'express'
 bodyParser = require 'body-parser'
 dl = require './DisplayLib.js'
 display = require '../../displayaddon'
-display_action = require './display_action.js'
+#display_action = require './display_action.js'
+di = require './display_interface.js'
 
 app = express()
 
@@ -19,9 +20,14 @@ app.get '/', (req, res) ->
   res.sendFile 'index.html', root: __dirname  # this always sends index.html, unintuitive
 
 app.post '/', (req, res) ->
+  di.templateFull(req.body)
+#  display_action.initDisplay(req.body)
+#  display_action.originalTest()
+###
+  console.log ('post complete')
+  res.json('')
   # decode json object
   object_props = req.body
-
   # convert base object to class
   obj = dl.Base.deserialize(object_props)
 
@@ -37,7 +43,7 @@ app.post '/', (req, res) ->
     result = b[i]
     send_buf = result.result_buffer.slice(0,result.result_bytes)
     config_buffer_queue.push send_buf
-    #console.log obj.panels[i]
+    console.log obj.panels[i]
   
   buffer_queue = []
 
@@ -55,9 +61,6 @@ app.post '/', (req, res) ->
     result = b[i]
     send_buf = result.result_buffer.slice(0,result.result_bytes)
     buffer_queue.push send_buf
-  
-#display_action.initDisplay();
-#display_action.originalTest();
   
   display.set_emulator '192.168.1.94', 1001
 
@@ -90,13 +93,14 @@ app.post '/', (req, res) ->
       res.json('error2')
   .catch ->
     res.json('error1')
-
+###
 
 app.listen port, ->
   console.log "starting list test at localhost:#{port}"
 
 
-### tester_addon.js
+### 
+tester_addon.js
 var dl = require('./DisplayLib');
 var display = require('../displayaddon/build/Release/displayaddon');
 

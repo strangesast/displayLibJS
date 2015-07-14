@@ -173,7 +173,8 @@ class Base
   constructor: (@xy) ->
   
   # should never have a base class, but here for consistency
-  string_type: 'Base' 
+  string_type: 'Base'
+  type: 0
 
   encodeint: (value, encoded_buffer, pos) ->
     if value < 0
@@ -343,19 +344,16 @@ class Base
 
     return object
 
-
 class XYInfo extends Base
   constructor: (@x=0, @y=0, @x_size=0, @y_size=0) ->
-
-  string_type: 'XYInfo'
+    @string_type='XYInfo'
 
   clear: ->
     @x = 0
     @y = 0
     @x_size = 0
     @y_size = 0
-
-
+    
 class Template extends Base
   # name (string) used to idenitfy
   # panels (list) list of panel objects used to render template
@@ -524,7 +522,7 @@ class Panel extends Base
   # total_size (xyinfo) template position / size information
   constructor: (
     @name
-    @xy
+    @xy=new XYInfo()
     @move_unlocked = true
     @total_size=new XYInfo()
     @fg_color= new Color()
@@ -540,10 +538,8 @@ class Panel extends Base
     @is_final = 0
     @display_attribute = DisplayAttribute.DA_NONE
   ) ->
-
-  type: MSG_PANELDEF
-
-  string_type: 'Panel'
+    @type = MSG_PANELDEF
+    @string_type = 'Panel'
 
   render_color: 'rgba(120, 120, 120, 1.0)'
 
@@ -574,7 +570,7 @@ class Panel extends Base
 class Textbox extends Base
   # xy (xyinfo) position / size information
   constructor: (
-    @xy
+    @xy=new XYInfo()
     text
     @move_unlocked = true
     @control = -1
@@ -586,12 +582,13 @@ class Textbox extends Base
     @scroll_type = 3
     @preferred_font = ""
   ) ->
+    @type = MSG_TEXTBOX
+    @string_type = 'Textbox'
     @elements = []
     if text
       t = new Text(@text_xy, text, @control)
       @elements.push new Text(@text_xy, text)
   
-  string_type: 'Textbox'
 
   buildmessagecontents: (msg_buffer, pos) ->
     scope = @
@@ -645,8 +642,8 @@ class Text extends Base
     @fg_color = new Color(255, 234, 8)
     @bg_color = new Color(205, 184, 8)
   ) ->
-
-  string_type: 'Text'
+    @string_type = 'Text'
+    @type = MSG_TEXT
 
   buildmessagecontents: (msg_buffer, pos) ->
     scope = @
@@ -701,14 +698,13 @@ class Text extends Base
 
 class DisplayCmd extends Base
   constructor: (
-    @type = MSG_DISPLAY_CMD
     @display_request = DisplayRequest.DISPLAY_NO_REQUEST
     @update_type = UpdateType.UPDATE_NONE
     @bright_level = -1
     @bright_range = -1
   ) ->
-
-  string_type: 'DisplayCmd'
+    @type = MSG_DISPLAY_CMD
+    @string_type='DisplayCmd'
 
   buildmessagecontents: (msg_buffer, pos) ->
     scope = @
