@@ -67,12 +67,25 @@ test_button.addEventListener 'click', (e) ->
   ob = template.serialize()
   output_textbox.innerHTML = JSON.stringify(ob, null, 2)
 
-button.onclick = (e) ->
+template_submit = (e) ->
+  e.target.disabled = true
+  e.removeEventListener 'click'
   ob = template.serialize()
-  makeRequest(ob).then (res) ->
-    console.log 'responded with'
-    console.log res 
 
+  request = new Promise (resolve, reject) ->
+    setTimeout resolve, 500, makeRequest(ob)
+
+  timeout = new Promise (resolve, reject) ->
+    setTimeout resolve, 4000, "timeout"
+
+  Promise.race [request, timeout]
+  .then (result) ->
+    console.log result
+    e.target.disabled = false
+    button.addEventListener 'click', template_submit
+
+button.addEventListener 'click', template_submit
+  
 #@name
 #@xy
 #@total_size=new XYInfo()

@@ -15,25 +15,27 @@ mongo_url = "mongodb://localhost:27017/test"
 
 active_db_connection = null
 
-connect_to_db = ->
+connect_to_db = ( db_address = mongo_url ) ->
   if active_db_connection?
     Promise.resolve(active_db_connection)
   else
     new Promise (resolve, reject) ->
       console.log "connecting to db at #{mongo_url}..."
-      mongoclient.connect mongo_url, (err, db) ->
+      mongoclient.connect db_address, (err, db) ->
         if err?
-          console.log "failed"
-          reject(err)
-        else
-          console.log "success"
-          resolve(db)
+          console.log "failed to connect to #{mongo_url}"
+          return reject(err)
+
+        console.log "successful connection"
+        return resolve(db)
+
 
 app.use express.static "#{__dirname}/"
 
 
 app.get '/', (req, res) ->
   res.sendFile 'index.html', root: __dirname  # this always sends index.html, unintuitive
+
 
 app.all '/list-templates', (req, res) ->
   respond = (object) ->
@@ -42,6 +44,7 @@ app.all '/list-templates', (req, res) ->
       res.send "<pre>" + JSON.stringify(object, null, 2) + "</pre>"
     else
       res.json object
+
   connect_to_db().then (db) ->
     template_collection = db.collection 'templates'
     return new Promise (resolve, reject) ->
@@ -50,8 +53,10 @@ app.all '/list-templates', (req, res) ->
           reject err
         else
           resolve result
+
     .then (result) ->
       respond result
+
     .catch (err) ->
       respond err
 
@@ -74,13 +79,7 @@ app.post '/', (req, res) ->
 
   connect_to_db().then (db) ->
     template_collection = db.collection 'templates'
-    new Promise (resolve, reject) ->
-      template_collection.update { _id: object_props._id }, object_props, { upsert: true }, (err, result) ->
-        if err?
-          reject err
-        else
-          resolve result
- 
+
   .then (result) ->
     console.log "successful save"
   .catch (result) ->
@@ -90,13 +89,14 @@ app.post '/', (req, res) ->
     di.templateFull(req.body)
     console.log ('post complete')
     res.json('')
+    di.templateFull(object_props)
 
 
 app.listen port, ->
   console.log "starting list test at localhost:#{port}"
 
 
-### 
+###
 tester_addon.js
 var dl = require('./DisplayLib');
 var display = require('../displayaddon/build/Release/displayaddon');
