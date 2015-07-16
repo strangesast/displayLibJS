@@ -28,6 +28,7 @@ def_has_been_sent = false
 
 templateFull = (json_text) ->
   display.set_emulator '127.0.0.1', 1001
+#  display.set_emulator '192.168.1.69', 1001
 
   obj = dl.Base.deserialize json_text
   throw new Error "must be a template object" unless obj?.string_type == 'Template'
@@ -39,7 +40,7 @@ templateFull = (json_text) ->
     def_has_been_sent = true
     console.log 'sending panel definition'
 
-    for panel, i in panels
+    for panel, i in obj.panels
       result = panel.buildmessage()
       send_buf = result.result_buffer.slice 0, result.result_bytes
       display.send_config send_buf, i+1
@@ -57,15 +58,17 @@ templateFull = (json_text) ->
     console.log "panel cmd #{result.result_bytes}"
 
   console.log "sending #{obj.elements.length} elements"
-  for element, i in elements
-    if i == elements.length - 1
+  for element, i in obj.elements
+    if i == obj.elements.length - 1
       element.is_final = 1
-
-    result = elment.buildmessage()
+    #** TEMP - provide a border color for testing
+    if element.type == dl.MSG_TEXTBOX
+      element.border_color.RGB(200, 200, 200, 80)
+    result = element.buildmessage()
     send_buf = result.result_buffer.slice 0, result.result_bytes
 
-    # shouldn't this be "send" not "send_config"?
-    display.send_config send_buf, i+1
+    # shouldn't this be "send" not "send_config"?  - YES IT SHOULD!
+    display.send send_buf
 
     console.log "element def: type: #{element.string_type} bytes: #{result.result_bytes}"
 
