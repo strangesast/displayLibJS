@@ -171,6 +171,14 @@ class Color
 
 class Base
   constructor: (@xy) ->
+    @type=0
+    @category=ObjectCategory.OC_UNSPECIFIED
+    @layer=-1
+    @panel=-1
+    @control=-1
+    @parent_control=-1
+    @is_final=0;
+    @display_attribute=DisplayAttribute.DA_NONE
   
   # should never have a base class, but here for consistency
   string_type: 'Base'
@@ -530,13 +538,6 @@ class Panel extends Base
     @geometry = PanelGeometry.PG_NOT_SPECIFIED
     @position = PanelPosition.PP_NOT_SPECIFIED
     @layout = PanelLayout.PL_NORMAL
-    @category = ObjectCategory.OC_UNSPECIFIED;
-    @layer = 0
-    @panel = 0
-    @control = 0
-    @parent_control = 0
-    @is_final = 0
-    @display_attribute = DisplayAttribute.DA_NONE
   ) ->
     @type = MSG_PANELDEF
     @string_type = 'Panel'
@@ -573,11 +574,10 @@ class Textbox extends Base
     @xy=new XYInfo()
     text
     @move_unlocked = true
-    @control = -1
     @text_xy = new XYInfo()
-    @fg_color= new Color()
+    @fg_color= new Color(200, 200, 200, 100)
     @bg_color= new Color()
-    @border_color = new Color()
+    @border_color = new Color(160, 0, 0, 100)
     @border_width = 1
     @scroll_type = 3
     @preferred_font = ""
@@ -598,9 +598,9 @@ class Textbox extends Base
       @xy.y
       @xy.x_size
       @xy.y_size
-      @fg_color
-      @bg_color
-      @border_color
+      @fg_color.value
+      @bg_color.value
+      @border_color.value
       @border_width
       @text_xy.x
       @text_xy.y

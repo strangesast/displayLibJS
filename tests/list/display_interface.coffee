@@ -27,8 +27,8 @@ clear_cmd.is_final = 1;
 def_has_been_sent = false
 
 templateFull = (json_text) ->
-  display.set_emulator '127.0.0.1', 1001
-#  display.set_emulator '192.168.1.69', 1001
+#  display.set_emulator '127.0.0.1', 1001
+  display.set_emulator '192.168.1.69', 1001
 
   obj = dl.Base.deserialize json_text
   throw new Error "must be a template object" unless obj?.string_type == 'Template'
