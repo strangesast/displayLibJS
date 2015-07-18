@@ -1,5 +1,7 @@
 dl = window.displayLib
 
+control_seq=10
+
 makeRequest = (data, location = '/', method = 'POST') ->
   data = JSON.stringify(data)
   new Promise (resolve, reject) ->
@@ -55,7 +57,9 @@ new_panel_event = (e) ->
     e.removeEventListener()
 
 new_textbox_event = (e) ->
-  tb = new dl.Textbox new dl.XYInfo(0, 0, 20, 10), textbox_text.value
+  tb = new dl.Textbox new dl.XYInfo(0, 0, 30, 10), textbox_text.value
+  tb.control = control_seq++
+#  alert "text: " + textbox_text.value + " control: " + tb.control
   template.elements.push tb
   template.render()
 

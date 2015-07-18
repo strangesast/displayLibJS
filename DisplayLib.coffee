@@ -170,7 +170,7 @@ class Color
     return @value
 
 class Base
-  constructor: (@xy) ->
+  constructor: ()->
     @type=0
     @category=ObjectCategory.OC_UNSPECIFIED
     @layer=-1
@@ -182,7 +182,14 @@ class Base
   
   # should never have a base class, but here for consistency
   string_type: 'Base'
-  type: 0
+  type:0
+  category:ObjectCategory.OC_UNSPECIFIED
+  layer:-1
+  panel:-1
+  control:-1
+  parent_control:-1
+  is_final:0
+  display_attribute:DisplayAttribute.DA_NONE
 
   encodeint: (value, encoded_buffer, pos) ->
     if value < 0
@@ -205,12 +212,14 @@ class Base
     encoded_buffer[pos] = ProtocolCode.START_TEXT
     pos++
     for char, i in string_value
-      if string_value.charCodeAt i < ProtocolCode.FIRST_LEGAL_CHAR
+      this_char = string_value.charCodeAt i
+      if this_char < ProtocolCode.FIRST_LEGAL_CHAR
         continue
-      encoded_buffer[pos] = string_value.charCodeAt i
+      encoded_buffer[pos] = this_char
       pos++
     encoded_buffer[pos] = ProtocolCode.END_ELEMENT
-    return pos++
+    pos++
+    return pos
 
   decodeint: (encoded_buffer, pos) ->
     is_negative = false
@@ -314,8 +323,12 @@ class Base
   # convert class instance to object
   serialize: (obj=@) ->
     ret = {}
+    if obj['type'] == 150
+      obj['control'] = 45
     for prop of obj
       val = obj[prop]
+#      if prop=='control' || prop=='type'
+#        alert "obj: " + val + "/ " + prop
 
       if val instanceof Array
         temp = []
@@ -584,9 +597,10 @@ class Textbox extends Base
   ) ->
     @type = MSG_TEXTBOX
     @string_type = 'Textbox'
+    @initial_text = text
     @elements = []
     if text
-      t = new Text(@text_xy, text, @control)
+#      t = new Text(new XYInfo(), text, @control)
       @elements.push new Text(@text_xy, text)
   
 
@@ -633,18 +647,33 @@ class Textbox extends Base
 
 class Text extends Base
   constructor: (
-    @xy
-    @text='undefined'
-    @parent_control
-    @font_size="6px"
-    @font_family="Sans Serif"
-    @preferred_font=""
-    @fg_color = new Color(255, 234, 8)
-    @bg_color = new Color(205, 184, 8)
+    a_xy
+    a_text='undefined'
+    a_parent_control
+    a_font_size="6px"
+    a_font_family="Sans Serif"
+    a_preferred_font=""
+    a_fg_color = new Color(255, 234, 8)
+    a_bg_color = new Color(0, 0, 0)
   ) ->
     @string_type = 'Text'
     @type = MSG_TEXT
+    @xy = a_xy
+    @text=a_text
+    @parent_control=a_parent_control
+    @font_size = a_font_size
+    @font_family = a_font_family
+    @preferred_font = a_preferred_font
+    @fg_color = a_fg_color
+    @bg_color = a_bg_color
 
+  text: ''
+  font_size: ''
+  font_family: ''
+  preferred_font: ''
+  fg_color: new Color(0,0,0,0)
+  bg_color: new Color(0,0,0,0)
+  
   buildmessagecontents: (msg_buffer, pos) ->
     scope = @
     pos = [
@@ -659,12 +688,14 @@ class Text extends Base
       scope.encodeint.call scope, curr, msg_buffer, prev
     , pos
 
-    [
-      @preferred_font
-      @text
-    ].reduce (prev, curr, i) ->
-      scope.encodestring.call scope, curr, msg_buffer, prev
-    , pos
+    pos = @encodestring @preferred_font, msg_buffer, pos
+    pos = @encodestring @text, msg_buffer, pos
+#    [
+#      @preferred_font
+#      @text
+#    ].reduce (prev, curr, i) ->
+#      scope.encodestring.call scope, curr, msg_buffer, prev
+#    , pos
 
     return pos
 

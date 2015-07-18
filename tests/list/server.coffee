@@ -21,6 +21,7 @@ app.get '/', (req, res) ->
 
 app.post '/', (req, res) ->
   di.templateFull(req.body)
+#  console.log req.body
 #  display_action.initDisplay(req.body)
 #  display_action.originalTest()
 ###

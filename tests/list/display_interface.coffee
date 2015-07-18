@@ -27,8 +27,9 @@ clear_cmd.is_final = 1;
 def_has_been_sent = false
 
 templateFull = (json_text) ->
-#  display.set_emulator '127.0.0.1', 1001
-  display.set_emulator '192.168.1.69', 1001
+  display.set_emulator '127.0.0.1', 1001
+#  display.set_emulator '192.168.1.69', 1001
+#  console.log "json text: " + json_text
 
   obj = dl.Base.deserialize json_text
   throw new Error "must be a template object" unless obj?.string_type == 'Template'
@@ -61,14 +62,27 @@ templateFull = (json_text) ->
   for element, i in obj.elements
     if i == obj.elements.length - 1
       element.is_final = 1
-    #** TEMP - provide a border color for testing
-    if element.type == dl.MSG_TEXTBOX
-      element.border_color.RGB(200, 200, 200, 80)
+    console.log 'control id = ' + element.control
+#    element.control = 12
     result = element.buildmessage()
     send_buf = result.result_buffer.slice 0, result.result_bytes
-
-    # shouldn't this be "send" not "send_config"?  - YES IT SHOULD!
     display.send send_buf
+    
+    #** TEMP - provide a some text
+    if element.type == dl.MSG_TEXTBOX
+      #add some text
+      text = new dl.Text new dl.XYInfo(), 'abc', element.control
+      text.is_final = element.is_final
+      text.text = element.initial_text
+#      text.text = 'hello'
+      console.log "text: " + text.text + '  textbox: ' + element.control + ' text parent: ' + text.parent_control
+      text.parent_control = element.control
+      result = text.buildmessage()
+      send_buf = result.result_buffer.slice 0, result.result_bytes
+      display.send send_buf
+     
+
+   
 
     console.log "element def: type: #{element.string_type} bytes: #{result.result_bytes}"
 
