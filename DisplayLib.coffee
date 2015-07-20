@@ -446,8 +446,11 @@ class Template extends Base
       id: "#{@string_type}_#{@name.replace(' ', '_')}"
       name: "#{@string_type}"
       viewBox: viewbox_str
-      width: (extents.x_high-extents.x_low)*@pixels
-      height: (extents.y_high-extents.y_low)*@pixels
+      # adjustable or
+      width: "100%"
+      # fixed width
+      #width: (extents.x_high-extents.x_low)*@pixels
+      #height: "100%"#(extents.y_high-extents.y_low)*@pixels
 
     return repr
 
@@ -457,6 +460,7 @@ class Template extends Base
     repr = @render_self()
 
     scope = @
+
     move = (e) =>
       if @currently_moving?
         start = @currently_moving.start_position
@@ -464,8 +468,10 @@ class Template extends Base
           x: e.clientX
           y: e.clientY
         
-        offsetx = (end.x - start.x)/@pixels
-        offsety = (end.y - start.y)/@pixels
+        box = scope.repr.getBoundingClientRect()
+        den = box.width / (@extents.x_high - @extents.x_low)
+        offsetx = (end.x - start.x)/den
+        offsety = (end.y - start.y)/den
         elem = @currently_moving.element
         elem_repr = elem.repr
         elem_repr.setAttribute 'transform', "translate(#{elem.xy.x+offsetx}, #{elem.xy.y+offsety})"
