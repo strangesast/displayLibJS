@@ -1,6 +1,6 @@
 dl = require './DisplayLib'
-dlA = require './DisplayLibA'
-display = require '../../displayaddon'
+#dlA = require './DisplayLibA'
+display = require 'displayaddon/build/Release/displayaddon'
 
 ###
 var panel_l = dlA.DLPanelDef();
@@ -31,6 +31,7 @@ templateFull = (json_text) ->
 #  display.set_emulator '192.168.1.69', 1001
 #  console.log "json text: " + json_text
 
+  console.log typeof json_text
   obj = dl.Base.deserialize json_text
   throw new Error "must be a template object" unless obj?.string_type == 'Template'
 
@@ -64,6 +65,7 @@ templateFull = (json_text) ->
       element.is_final = 1
     console.log 'control id = ' + element.control
 #    element.control = 12
+
     result = element.buildmessage()
     send_buf = result.result_buffer.slice 0, result.result_bytes
     display.send send_buf
@@ -80,9 +82,6 @@ templateFull = (json_text) ->
       result = text.buildmessage()
       send_buf = result.result_buffer.slice 0, result.result_bytes
       display.send send_buf
-     
-
-   
 
     console.log "element def: type: #{element.string_type} bytes: #{result.result_bytes}"
 

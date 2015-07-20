@@ -1,9 +1,9 @@
 express = require 'express'
 bodyParser = require 'body-parser'
-dl = require './DisplayLib.js'
-display = require '../../displayaddon'
-#display_action = require './display_action.js'
-di = require './display_interface.js'
+dl = require './DisplayLib'
+display = require 'displayaddon/build/Release/displayaddon'
+di = require './display_interface'
+mongoclient = require('mongodb').MongoClient
 
 app = express()
 
@@ -11,96 +11,98 @@ app.use bodyParser.json()
 app.use bodyParser.urlencoded extended: true
 
 port = 3000
+mongo_url = "mongodb://localhost:27017/test"
 
-#display.set_emulator "127.0.0.1", 1001
+active_db_connection = null
+
+connect_to_db = ( db_address = mongo_url ) ->
+  if active_db_connection?
+    Promise.resolve(active_db_connection)
+  else
+    new Promise (resolve, reject) ->
+      console.log "connecting to db at #{mongo_url}..."
+      mongoclient.connect db_address, (err, db) ->
+        if err?
+          console.log "failed to connect to #{mongo_url}"
+          return reject(err)
+
+        console.log "successful connection"
+        return resolve(db)
+
 
 app.use express.static "#{__dirname}/"
+
 
 app.get '/', (req, res) ->
   res.sendFile 'index.html', root: __dirname  # this always sends index.html, unintuitive
 
+
+app.all '/list-templates', (req, res) ->
+  respond = (object) ->
+    # if get (probably browser) add <pre> for formatting
+    if req.method is "GET"
+      res.send "<pre>" + JSON.stringify(object, null, 2) + "</pre>"
+    else
+      res.json object
+
+  connect_to_db().then (db) ->
+    template_collection = db.collection 'templates'
+    return new Promise (resolve, reject) ->
+      template_collection.find({}).toArray (err, result) ->
+        if err?
+          reject err
+        else
+          resolve result
+
+    .then (result) ->
+      respond result
+
+    .catch (err) ->
+      respond err
+
 app.post '/', (req, res) ->
-  di.templateFull(req.body)
-#  console.log req.body
-#  display_action.initDisplay(req.body)
-#  display_action.originalTest()
-###
-  console.log ('post complete')
-  res.json('')
   # decode json object
   object_props = req.body
+
+  name = object_props.name
+
+  unless name?
+    return res.json("you need a name")
+
+  object_props['_id'] = name.replace(' ', '_').toLowerCase()
+
   # convert base object to class
   obj = dl.Base.deserialize(object_props)
 
   unless obj.string_type? != 'Template'
-    return res.send('uh')
+    return res.send('not a template')
 
+  connect_to_db().then (db) ->
+    template_collection = db.collection 'templates'
+    new Promise (resolve, reject) ->
+      template_collection.update _id: object_props._id, object_props, upsert: true, (err, result) ->
+        if err?
+          reject err
+        else
+          resolve result
 
-  b = obj.buildmessage()
-  # send panels
-
-  config_buffer_queue = []
-  for i in [0...obj.panels.length]
-    result = b[i]
-    send_buf = result.result_buffer.slice(0,result.result_bytes)
-    config_buffer_queue.push send_buf
-    console.log obj.panels[i]
-  
-  buffer_queue = []
-
-  dc = new dl.DisplayCmd()
-  dc.display_request = dl.DisplayRequest.DISPLAY_CLEAR;
-  dc.update_type = dl.UpdateType.UPDATE_ALL;
-  dc.panel = dl.GenericScope.GS_APPLIES_TO_ALL;
-  dc.is_final = 1;
-
-  result = dc.buildmessage()
-  send_buf = result.result_buffer.slice(0,result.result_bytes)
-  buffer_queue.push send_buf
-
-  for i in [obj.panels.length...b.length]
-    result = b[i]
-    send_buf = result.result_buffer.slice(0,result.result_bytes)
-    buffer_queue.push send_buf
-  
-  display.set_emulator '192.168.1.94', 1001
-
-  results = []
-
-  reportStatus = (buf) ->
-    console.log "STATUS: #{buf.toString()}"
-
-  config_buffer_queue.reduce (prev, curr, i) ->
-    prev.then (elem) ->
-      return new Promise (resolve, reject) ->
-        console.log i
-        s = display.send_config curr, i+1
-        results.push s
-        resolve s
-  , Promise.resolve()
+  .then (result) ->
+    console.log "successful save"
+  .catch (result) ->
+    console.log "failed to save"
   .then ->
-    buffer_queue.reduce (prev, curr, i) ->
-      prev.then (elem) ->
-        return new Promise (resolve, reject) ->
-          console.log i
-          s = display.send curr, reportStatus
-          results.push s
-          resolve s
-    , Promise.resolve()
-    .then ->
-      console.log 'completed with no error'
-      res.json(results)
-    .catch ->
-      res.json('error2')
-  .catch ->
-    res.json('error1')
-###
+    # build message & send
+    console.log "here"
+    di.templateFull(object_props)
+    console.log ('post complete')
+    res.json('')
+
 
 app.listen port, ->
   console.log "starting list test at localhost:#{port}"
 
 
-### 
+###
 tester_addon.js
 var dl = require('./DisplayLib');
 var display = require('../displayaddon/build/Release/displayaddon');
