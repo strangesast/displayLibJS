@@ -79,6 +79,12 @@ app.post '/', (req, res) ->
 
   connect_to_db().then (db) ->
     template_collection = db.collection 'templates'
+    new Promise (resolve, reject) ->
+      template_collection.update _id: object_props._id, object_props, upsert: true, (err, result) ->
+        if err?
+          reject err
+        else
+          resolve result
 
   .then (result) ->
     console.log "successful save"
