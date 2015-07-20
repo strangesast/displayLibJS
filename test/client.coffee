@@ -24,6 +24,7 @@ textbox_text = document.getElementById "text"
 test_button = document.getElementById "test_button"
 output_textbox = document.getElementById "output_textbox"
 button = document.getElementById 'button'
+result_elem = document.getElementById "result"
 template = null
 
 new_template_button.addEventListener 'click', (e) ->
@@ -80,7 +81,12 @@ template_submit = (e) ->
 
   Promise.race [request, timeout]
   .then (result) ->
-    alert "timeout" if result == "timeout"
+    if result == "timeout"
+      result_elem.classList.remove "success"
+      result_elem.classList.add "failure"
+    else 
+      result_elem.classList.remove "failure"
+      result_elem.classList.add "success"
     e.target.disabled = false
     button.addEventListener 'click', template_submit
 

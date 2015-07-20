@@ -4,6 +4,17 @@
   body {
     margin: 0px;
   }
+  #result {
+    font-size: 40px;
+  }
+  .success::after {
+    color: green;
+    content: " ✔";
+  }
+  .failure::after {
+    color: red;
+    content: " ✖";
+  }
   [name=bounds] {
     cursor: move;
   }
@@ -23,6 +34,7 @@
   <br>
   <button id="test_button">Test</button>
   <button id="button">Submit</button>
+  <span id="result"></span>
 
   <br>
   <pre id="output_textbox"></pre>
