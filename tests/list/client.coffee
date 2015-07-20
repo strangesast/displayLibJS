@@ -54,7 +54,7 @@ new_panel_event = (e) ->
     i++
   else
     e.target.disabled = true
-    e.removeEventListener()
+    e.target.removeEventListener()
 
 new_textbox_event = (e) ->
   tb = new dl.Textbox new dl.XYInfo(0, 0, 30, 10), textbox_text.value
@@ -69,7 +69,7 @@ test_button.addEventListener 'click', (e) ->
 
 template_submit = (e) ->
   e.target.disabled = true
-  e.removeEventListener 'click'
+  e.target.removeEventListener 'click'
   ob = template.serialize()
 
   request = new Promise (resolve, reject) ->
@@ -80,7 +80,7 @@ template_submit = (e) ->
 
   Promise.race [request, timeout]
   .then (result) ->
-    console.log result
+    alert "timeout" if result == "timeout"
     e.target.disabled = false
     button.addEventListener 'click', template_submit
 

@@ -1,8 +1,8 @@
 express = require 'express'
 bodyParser = require 'body-parser'
-dl = require './DisplayLib.js'
-display = require '../../displayaddon'
-di = require './display_interface.js'
+dl = require './DisplayLib'
+display = require 'displayaddon/build/Release/displayaddon'
+di = require './display_interface'
 mongoclient = require('mongodb').MongoClient
 
 app = express()
@@ -92,10 +92,10 @@ app.post '/', (req, res) ->
     console.log "failed to save"
   .then ->
     # build message & send
-    di.templateFull(req.body)
+    console.log "here"
+    di.templateFull(object_props)
     console.log ('post complete')
     res.json('')
-    di.templateFull(object_props)
 
 
 app.listen port, ->
