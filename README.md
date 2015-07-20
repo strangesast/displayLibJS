@@ -7,4 +7,4 @@
 * build .js files with `coffee -c .`
 * start with `node server.js`
 
-Tests are located in `/tests/`
+Tests are located in `/test/`
