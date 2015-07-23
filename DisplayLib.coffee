@@ -3,7 +3,7 @@ SVGNS = "http://www.w3.org/2000/svg"
 CMD_NONE = 0
 MSG_NONE = 0
 MSG_RECT = 101
-MSG_TEXTBOX = 110;
+MSG_TEXTBOX = 110
 MSG_TEXT = 150
 MSG_PANELDEF = 151
 MSG_TEXTBOX_CMD = 161
@@ -136,7 +136,7 @@ class Color
     else if typeof intensity == "undefined"
       @value = 0x7f000000 + ((red & 0xff)<< 16) + ((green & 0xff) << 8) + (blue & 0xff)
     else
-      l_intensity = 100;
+      l_intensity = 100
       if (intensity > 0 && intensity < 100)
         l_intensity = intensity
       @value = (l_intensity << 24) + ((red & 0xff)<< 16) + ((green & 0xff) << 8) + (blue & 0xff)
@@ -150,12 +150,12 @@ class Color
     l_intensity = 100
     if (typeof intensity != "undefined" && intensity > 0 && intensity < 100)
       l_intensity = intensity
-    @value = (l_intensity << 24) + ((red & 0xff)<< 16) + ((green & 0xff) << 8) + (blue & 0xff);
+    @value = (l_intensity << 24) + ((red & 0xff)<< 16) + ((green & 0xff) << 8) + (blue & 0xff)
   get_intensity: () ->
-    intensity = (@value & 0x7f000000) >> 24;
+    intensity = (@value & 0x7f000000) >> 24
     if (intensity > 100 || intensity < 0)
-      intensity = 100;
-    return intensity;
+      intensity = 100
+    return intensity
   
   set_intensity: (intensity) ->
     if (intensity < 0 || intensity > 100)
@@ -169,6 +169,7 @@ class Color
   get_value: () ->
     return @value
 
+
 class Base
   constructor: ()->
     @type=0
@@ -177,8 +178,9 @@ class Base
     @panel=-1
     @control=-1
     @parent_control=-1
-    @is_final=0;
+    @is_final=0
     @display_attribute=DisplayAttribute.DA_NONE
+    @mongo_id=0
   
   # should never have a base class, but here for consistency
   string_type: 'Base'
@@ -242,7 +244,6 @@ class Base
       return_string = return_string + encoded_buffer[pos]
     return result_str: return_string, result_pos: pos
 
-
   buildmessagecontents: (msg_buffer, pos) ->
     pos
 
@@ -274,9 +275,6 @@ class Base
     pos++
 
     return result_buffer: msg_buffer, result_bytes: pos
-
-
-
 
   newSVGElement: (kind, attributes) ->
     elem = document.createElementNS SVGNS, kind
@@ -327,8 +325,6 @@ class Base
       obj['control'] = 45
     for prop of obj
       val = obj[prop]
-#      if prop=='control' || prop=='type'
-#        alert "obj: " + val + "/ " + prop
 
       if val instanceof Array
         temp = []
@@ -365,6 +361,7 @@ class Base
 
     return object
 
+
 class XYInfo extends Base
   constructor: (@x=0, @y=0, @x_size=0, @y_size=0) ->
     @string_type='XYInfo'
@@ -375,6 +372,7 @@ class XYInfo extends Base
     @x_size = 0
     @y_size = 0
     
+
 class Template extends Base
   # name (string) used to idenitfy
   # panels (list) list of panel objects used to render template
@@ -584,7 +582,6 @@ class Panel extends Base
     , pos
 
     return pos
-
 
 
 class Textbox extends Base
