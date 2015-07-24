@@ -180,7 +180,6 @@ class Base
     @parent_control=-1
     @is_final=0
     @display_attribute=DisplayAttribute.DA_NONE
-    @mongo_id=0
   
   # should never have a base class, but here for consistency
   string_type: 'Base'
@@ -192,6 +191,7 @@ class Base
   parent_control:-1
   is_final:0
   display_attribute:DisplayAttribute.DA_NONE
+  @mongo_id=0
 
   encodeint: (value, encoded_buffer, pos) ->
     if value < 0
