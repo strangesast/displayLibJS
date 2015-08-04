@@ -584,6 +584,7 @@ class Panel extends Base
     return pos
 
 
+last_control = 0
 class Textbox extends Base
   # xy (xyinfo) position / size information
   constructor: (
@@ -597,6 +598,7 @@ class Textbox extends Base
     @border_width = 1
     @scroll_type = 3
     @preferred_font = ""
+    @control = last_control++
   ) ->
     @type = MSG_TEXTBOX
     @string_type = 'Textbox'
@@ -604,7 +606,7 @@ class Textbox extends Base
     @elements = []
     if text
 #      t = new Text(new XYInfo(), text, @control)
-      @elements.push new Text(@text_xy, text)
+      @elements.push new Text(@text_xy, text, @control)
   
 
   buildmessagecontents: (msg_buffer, pos) ->
