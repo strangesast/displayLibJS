@@ -382,6 +382,7 @@ class Template extends Base
   constructor: (@name, @panels=[], @elements=[], @pixels=10, @render_delay=100) ->
     # adjust template extents for panels
     @extents = @recalculateExtents()
+    @moveFinishedCallback = null
 
   # always same string (and case) as class name
   string_type: 'Template'
@@ -480,6 +481,7 @@ class Template extends Base
           elem_repr.setAttribute 'transform', "translate(#{elem.xy.x}, #{elem.xy.y})"
           setTimeout ->
             scope.render.call(scope)
+            scope.moveFinishedCallback(elem) if scope.moveFinishedCallback?
           , scope.render_delay
       null
    
@@ -504,7 +506,10 @@ class Template extends Base
 
     # if already defined (and presumably attached to a parent node) replace
     # that node with the new one
-    if @repr then @repr.parentNode?.replaceChild repr, @repr
+    if @repr
+      for elem in @repr.classList
+        repr.classList.add elem
+      @repr.parentNode?.replaceChild repr, @repr
 
     @repr = repr
     return @repr
