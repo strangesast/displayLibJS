@@ -383,6 +383,7 @@ class Template extends Base
     # adjust template extents for panels
     @extents = @recalculateExtents()
     @moveFinishedCallback = null
+    @liveMoveCallback = null
 
   # always same string (and case) as class name
   string_type: 'Template'
@@ -474,6 +475,7 @@ class Template extends Base
         elem = @currently_moving.element
         elem_repr = elem.repr
         elem_repr.setAttribute 'transform', "translate(#{elem.xy.x+offsetx}, #{elem.xy.y+offsety})"
+        if @liveMoveCallback? then @liveMoveCallback(xy: { x: elem.xy.x + Math.round(offsetx), y: elem.xy.y + Math.round(offsety)})
         unless e.type == "mousemove"
           @currently_moving = null 
           elem.xy.x += Math.round offsetx
