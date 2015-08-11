@@ -191,7 +191,7 @@ class Base
   parent_control:-1
   is_final:0
   display_attribute:DisplayAttribute.DA_NONE
-  @mongo_id=0
+  @mongo_id=-1
 
   encodeint: (value, encoded_buffer, pos) ->
     if value < 0
@@ -444,6 +444,7 @@ class Template extends Base
 
     repr = @newSVGElement 'svg',
       id: "#{@string_type}_#{@name.replace(' ', '_')}"
+      mongo_id: "#{@mongo_id}"
       name: "#{@string_type}"
       viewBox: viewbox_str
       # adjustable or
