@@ -140,17 +140,24 @@ class Color
       if (intensity > 0 && intensity < 100)
         l_intensity = intensity
       @value = (l_intensity << 24) + ((red & 0xff)<< 16) + ((green & 0xff) << 8) + (blue & 0xff)
+
+  string_type: 'Color'
+
   red: () ->
     return (@value >> 16) & 0xff
+
   green: () ->
     return (@value>>8) & 0xff
+
   blue: () ->
     return @value & 0xff
+
   RGB: (red, green, blue, intensity) ->
     l_intensity = 100
     if (typeof intensity != "undefined" && intensity > 0 && intensity < 100)
       l_intensity = intensity
     @value = (l_intensity << 24) + ((red & 0xff)<< 16) + ((green & 0xff) << 8) + (blue & 0xff)
+    
   get_intensity: () ->
     intensity = (@value & 0x7f000000) >> 24
     if (intensity > 100 || intensity < 0)
@@ -164,10 +171,15 @@ class Color
 
   set_empty: () ->
     @value = -1
+
   is_empty: () ->
     return @value & 0xff000000 == 0xff000000
+
   get_value: () ->
     return @value
+
+  schema:
+    value: 'ColorHex'
 
 
 class Base
@@ -371,6 +383,12 @@ class XYInfo extends Base
     @y = 0
     @x_size = 0
     @y_size = 0
+
+  schema:
+    x: 'Number'
+    y: 'Number'
+    x_size: 'Number'
+    y_size: 'Number'
     
 
 class Template extends Base
@@ -548,6 +566,14 @@ class Template extends Base
 
     return temp
 
+  # TODO: Add description key, add default key, add type key
+  schema:
+    name: 'String'
+    elements: 'ArrayofAny'
+    panels: 'ArrayofPanel'
+    pixels: 'Number'
+    render_delay: 'Number'
+
 
 class Panel extends Base
   # name (string) used to identify later, probably unnecessary
@@ -592,6 +618,18 @@ class Panel extends Base
     return pos
 
 
+  schema:
+    name: 'String'
+    xy: 'XYInfo'
+    move_unlocked: 'Boolean'
+    total_size: 'XYInfo'
+    fg_color: 'Color'
+    bg_color: 'Color'
+    geometry: 'PanelGeometry'
+    position: 'PanelPosition'
+    layout: 'PanelLayout'
+
+
 last_control = 0
 class Textbox extends Base
   # xy (xyinfo) position / size information
@@ -613,7 +651,7 @@ class Textbox extends Base
     @initial_text = text
     @elements = []
     if text
-#      t = new Text(new XYInfo(), text, @control)
+      #t = new Text(new XYInfo(), text, @control)
       @elements.push new Text(@text_xy, text, @control)
   
 
@@ -657,6 +695,18 @@ class Textbox extends Base
 
     return @repr
 
+  schema: 
+    xy: 'XYInfo'
+    move_unlocked: 'Boolean'
+    text_xy: 'XYInfo'
+    fg_color: 'Color'
+    bg_color: 'Color'
+    border_color: 'Color'
+    border_width: 'NumberPositive'
+    scroll_type: [1, 2, 3]
+    preferred_font: 'String'
+    control: 'Number'
+
 
 class Text extends Base
   constructor: (
@@ -680,12 +730,13 @@ class Text extends Base
     @fg_color = a_fg_color
     @bg_color = a_bg_color
 
-  text: ''
-  font_size: ''
-  font_family: ''
-  preferred_font: ''
-  fg_color: new Color(0,0,0,0)
-  bg_color: new Color(0,0,0,0)
+  # Shouldn't be necessary
+  #text: ''
+  #font_size: ''
+  #font_family: ''
+  #preferred_font: ''
+  #fg_color: new Color(0,0,0,0)
+  #bg_color: new Color(0,0,0,0)
   
   buildmessagecontents: (msg_buffer, pos) ->
     scope = @
@@ -739,6 +790,16 @@ class Text extends Base
 
     return @repr
 
+  schema:
+    xy: 'XYInfo'
+    text: 'String'
+    parent_control: 'Number' # should be list of available controls
+    font_size: 'String' # should be a number followed by 'px'
+    font_family: 'String'
+    preferred_font: 'String'
+    fg_color: 'Color'
+    bg_color: 'Color'
+
 
 class DisplayCmd extends Base
   constructor: (
@@ -762,6 +823,10 @@ class DisplayCmd extends Base
     , pos
 
     return pos
+
+  schema:
+    bright_level: 'Number'
+    bright_range: 'Number'
 
 
 exports =
