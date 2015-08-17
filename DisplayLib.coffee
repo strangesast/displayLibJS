@@ -165,7 +165,7 @@ class Color
     string = ("0000000" + val.toString(16)).slice(-8)
     return {
       intensity: parseInt(string.slice(0,2), 16)
-      hex: string.slice(2)
+      hex: '#' + string.slice(2)
     }
 
   RGB: (red, green, blue, intensity) ->
@@ -333,8 +333,8 @@ class Base
       visibility: 'inherit'
       draggable: true
 
-    if @render_color?
-      b_attributes.fill = @render_color
+    if @bg_color?
+      b_attributes.fill = @bg_color.to_hex().hex
 
     @bounds = @newSVGElement 'rect', b_attributes
 
@@ -607,8 +607,8 @@ class Panel extends Base
     @xy=new XYInfo()
     @move_unlocked = true
     @total_size=new XYInfo()
-    @fg_color= new Color()
-    @bg_color= new Color()
+    @fg_color= new Color(200, 200, 200, 4)
+    @bg_color= new Color(80, 80, 80, 10)
     @geometry = PanelGeometry.PG_NOT_SPECIFIED
     @position = PanelPosition.PP_NOT_SPECIFIED
     @layout = PanelLayout.PL_NORMAL
@@ -616,8 +616,6 @@ class Panel extends Base
     @local_id = Base.last_local_id++
     @type = MSG_PANELDEF
     @string_type = 'Panel'
-
-  render_color: 'rgba(120, 120, 120, 1.0)'
 
   buildmessagecontents: (msg_buffer, pos) ->
     scope = @
@@ -663,7 +661,7 @@ class Textbox extends Base
     @move_unlocked = true
     @text_xy = new XYInfo()
     @fg_color= new Color(200, 200, 200, 100)
-    @bg_color= new Color()
+    @bg_color= new Color(100, 100, 100, 10)
     @border_color = new Color(160, 0, 0, 100)
     @border_width = 1
     @scroll_type = 3
@@ -706,8 +704,6 @@ class Textbox extends Base
     return pos
 
 
-  render_color: 'rgba(140, 140, 140, 1.0)'
-
   render: (visibility='visible') ->
     repr = super visibility
 
@@ -723,8 +719,9 @@ class Textbox extends Base
   schema: 
     xy: 'XYInfo'
     move_unlocked: 'Boolean'
+    elements: 'ArrayofAny'
     text_xy: 'XYInfo'
-    fg_color: 'Color'
+    #fg_color: 'Color'
     bg_color: 'Color'
     border_color: 'Color'
     border_width: 'NumberPositive'
@@ -741,8 +738,8 @@ class Text extends Base
     a_font_size="6px"
     a_font_family="Sans Serif"
     a_preferred_font=""
-    a_fg_color = new Color(255, 234, 8)
-    a_bg_color = new Color(0, 0, 0)
+    a_fg_color = new Color(255, 234, 8, 100)
+    a_bg_color = new Color(100, 100, 100, 10)
   ) ->
     @local_id = Base.last_local_id++
     @string_type = 'Text'
@@ -789,17 +786,13 @@ class Text extends Base
 
     return pos
 
-  render_color: 'rgba(160, 160, 160, 1.0)'
-
-  text_render_color: 'rgba(200, 200, 200, 1.0)'
-
   render_self: (visibility) ->
     repr = super visibility
 
     text = @newSVGElement 'text',
       x: 0
       y: 6
-      fill: @text_render_color
+      fill: @fg_color.to_hex().hex
       'font-family': @font_family
       'font-size': @font_size
       visibility: 'inherit'
@@ -814,17 +807,15 @@ class Text extends Base
   render: (visibility='inherit') ->
     @repr = super visibility
 
-    return @repr
-
+    return @repr 
   schema:
-    xy: 'XYInfo'
+    #xy: 'XYInfo'
     text: 'String'
     parent_control: 'Number' # should be list of available controls
     font_size: 'String' # should be a number followed by 'px'
     font_family: 'String'
     preferred_font: 'String'
     fg_color: 'Color'
-    bg_color: 'Color'
 
 
 class DisplayCmd extends Base
