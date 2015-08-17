@@ -540,12 +540,12 @@ class Template extends Base
     for panel in @panels
       panel_repr = panel.render()
       repr.appendChild panel_repr
-      attachMoverListener panel if panel.move_unlocked? == true
+      attachMoverListener panel if panel.move_unlocked != false
 
     for element in @elements
       element_repr = element.render()
       repr.appendChild element_repr
-      attachMoverListener element if element.bounds? and element.move_unlocked? == true # probably not necessary
+      attachMoverListener element if element.bounds? and element.move_unlocked != false # probably not necessary
 
     # if already defined (and presumably attached to a parent node) replace
     # that node with the new one
