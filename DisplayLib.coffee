@@ -129,6 +129,7 @@ UpdateType = Object.freeze
 class Color
   constructor: (red, green, blue, intensity) ->
     @value = -1
+    @local_id = Base.last_local_id++
     #test for being called with no arguments
     if typeof red == "undefined"
       @value = -1
@@ -151,6 +152,21 @@ class Color
 
   blue: () ->
     return @value & 0xff
+
+  from_hex: (hex_string, intensity=50) ->
+    without = parseInt(hex_string, 16)
+    @value = (intensity << 24) + without
+
+  to_hex: ->
+    if @value < 0
+      val = 0
+    else
+      val = @value
+    string = ("0000000" + val.toString(16)).slice(-8)
+    return {
+      intensity: parseInt(string.slice(0,2), 16)
+      hex: string.slice(2)
+    }
 
   RGB: (red, green, blue, intensity) ->
     l_intensity = 100
@@ -192,6 +208,7 @@ class Base
     @parent_control=-1
     @is_final=0
     @display_attribute=DisplayAttribute.DA_NONE
+  @local_id = Base.last_local_id++
   
   # should never have a base class, but here for consistency
   string_type: 'Base'
@@ -203,7 +220,7 @@ class Base
   parent_control:-1
   is_final:0
   display_attribute:DisplayAttribute.DA_NONE
-  @mongo_id=-1
+  @last_local_id: 0
 
   encodeint: (value, encoded_buffer, pos) ->
     if value < 0
@@ -376,8 +393,9 @@ class Base
 
 class XYInfo extends Base
   constructor: (@x=0, @y=0, @x_size=0, @y_size=0) ->
-    @string_type='XYInfo'
+    @local_id = Base.last_local_id++
 
+  string_type: 'XYInfo'
   clear: ->
     @x = 0
     @y = 0
@@ -399,9 +417,11 @@ class Template extends Base
   # render_delay (integer) how long to wait before readjusting template in milliseconds
   constructor: (@name, @panels=[], @elements=[], @pixels=10, @render_delay=100) ->
     # adjust template extents for panels
+    @local_id = Base.last_local_id++
     @extents = @recalculateExtents()
     @moveFinishedCallback = null
     @liveMoveCallback = null
+    @elemSelectedCallback = null
 
   # always same string (and case) as class name
   string_type: 'Template'
@@ -462,7 +482,6 @@ class Template extends Base
 
     repr = @newSVGElement 'svg',
       id: "#{@string_type}_#{@name.replace(' ', '_')}"
-      mongo_id: "#{@mongo_id}"
       name: "#{@string_type}"
       viewBox: viewbox_str
       # adjustable or
@@ -470,6 +489,9 @@ class Template extends Base
       # fixed width
       #width: (extents.x_high-extents.x_low)*@pixels
       #height: "100%"#(extents.y_high-extents.y_low)*@pixels
+
+    if @mongo_id?
+      repr.setAttribute 'mongo_id', "#{@mongo_id}"
 
     return repr
 
@@ -537,6 +559,7 @@ class Template extends Base
 
   # cooooool =>
   set_moving: (elem, e) =>
+    @elemSelectedCallback(elem) if @elemSelectedCallback?
     @currently_moving = 
       element: elem
       start_position: 
@@ -590,6 +613,7 @@ class Panel extends Base
     @position = PanelPosition.PP_NOT_SPECIFIED
     @layout = PanelLayout.PL_NORMAL
   ) ->
+    @local_id = Base.last_local_id++
     @type = MSG_PANELDEF
     @string_type = 'Panel'
 
@@ -647,6 +671,7 @@ class Textbox extends Base
     @control = last_control++
   ) ->
     @type = MSG_TEXTBOX
+    @local_id = Base.last_local_id++
     @string_type = 'Textbox'
     @initial_text = text
     @elements = []
@@ -719,6 +744,7 @@ class Text extends Base
     a_fg_color = new Color(255, 234, 8)
     a_bg_color = new Color(0, 0, 0)
   ) ->
+    @local_id = Base.last_local_id++
     @string_type = 'Text'
     @type = MSG_TEXT
     @xy = a_xy
@@ -808,6 +834,7 @@ class DisplayCmd extends Base
     @bright_level = -1
     @bright_range = -1
   ) ->
+    @mongo_id = Base.last_local_id++
     @type = MSG_DISPLAY_CMD
     @string_type='DisplayCmd'
 
